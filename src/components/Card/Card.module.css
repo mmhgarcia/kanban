@@ -9,8 +9,9 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
   border: 1px solid #2a2a4a;
   cursor: grab;
-  max-height: 250px; /* Límite de altura aproximado a 1.5 veces una card estándar */
-  overflow-y: auto;  /* Scroll interno si el contenido excede el máximo */
+  max-height: 250px;
+  overflow-y: auto;
+  flex-shrink: 0; /* Evita que la tarjeta se aplaste */
 }
 
 /* Personalización del scrollbar para que sea sutil */

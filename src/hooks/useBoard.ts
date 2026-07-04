@@ -39,7 +39,7 @@ export function useBoard() {
   const addCard = useCallback((columnId: string, card: Card) => {
     const newColumns = columns.map(col => {
       if (col.id === columnId) {
-        return { ...col, cards: [...col.cards, card] };
+        return { ...col, cards: [card, ...col.cards] };
       }
       return col;
     });

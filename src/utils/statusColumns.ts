@@ -2,10 +2,10 @@ import type { Column } from '../models/Column';
 
 export function getInitialStatusColumns(): Column[] {
   return [
-    { id: 'backlog', title: 'Backlog', cards: [] },
-    { id: 'todo', title: 'To Do', cards: [] },
-    { id: 'doing', title: 'Doing', cards: [] },
-    { id: 'testing', title: 'Testing', cards: [] },
-    { id: 'done', title: 'Done', cards: [] },
+    { id: 'documentation', title: 'DOCUMENTATION', cards: [] },
+    { id: 'backlog', title: 'BACKLOG', cards: [] },
+    { id: 'doing', title: 'DOING', cards: [] },
+    { id: 'testing', title: 'TESTING', cards: [] },
+    { id: 'done', title: 'DONE', cards: [] },
   ];
 }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import styles from './Column.module.css';
 import type { Column as ColumnModel } from '../../models/Column';
 import type { Card as CardModel } from '../../models/Card';
@@ -46,6 +46,18 @@ export const Column: React.FC<ColumnProps> = ({
   onMoveRightCol,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const cardListRef = useRef<HTMLDivElement>(null);
+  const prevCardsLength = useRef(column.cards.length);
+
+  useEffect(() => {
+    // Si se ha añadido una tarjeta nueva
+    if (column.cards.length > prevCardsLength.current) {
+      if (cardListRef.current) {
+        cardListRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+    prevCardsLength.current = column.cards.length;
+  }, [column.cards.length]);
 
   const openCards = column.cards.filter(c => c.status !== 'closed');
   const hasOpenCards = openCards.length > 0;
@@ -145,15 +157,21 @@ export const Column: React.FC<ColumnProps> = ({
         </div>
       )}
 
-      <div className={styles.cardList}>
-        {[...column.cards]
-          .sort((a, b) => {
-            if (!a.scheduledDate && !b.scheduledDate) return 0;
-            if (!a.scheduledDate) return 1;
-            if (!b.scheduledDate) return -1;
-            return a.scheduledDate.localeCompare(b.scheduledDate);
-          })
-          .map((card, index) => (
+      <div className={styles.cardList} ref={cardListRef}>
+        {(mode === 'monthly'
+          ? [...column.cards].sort((a, b) => {
+              const dateA = a.scheduledDate || '';
+              const dateB = b.scheduledDate || '';
+
+              if (!dateA && !dateB) return 0;
+              if (!dateA) return -1; // Cards without date at the top
+              if (!dateB) return 1;
+
+              // Descending order (latest dates first)
+              return dateB.localeCompare(dateA);
+            })
+          : column.cards
+        ).map((card, index) => (
           <Card 
             key={card.id} 
             card={card} 
