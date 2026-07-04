@@ -15,15 +15,22 @@ export const MONTH_NAMES = [
   'Diciembre',
 ];
 
+export function getColumnId(date: Date): string {
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
 export function getInitialColumns(): Column[] {
   const columns: Column[] = [];
   const currentDate = new Date();
+  currentDate.setDate(1); // Ensure we start at the beginning of the month
 
   for (let i = 0; i < 4; i++) {
     const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
     const month = targetDate.getMonth();
     const year = targetDate.getFullYear();
-    const id = `${year}-${String(month + 1).padStart(2, '0')}`;
+    const id = getColumnId(targetDate);
 
     columns.push({
       id,

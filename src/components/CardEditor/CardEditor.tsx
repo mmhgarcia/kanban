@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import styles from './CardEditor.module.css';
 import type { Card, CardPriority } from '../../models/Card';
+import type { BoardMode } from '../../models/Board';
 import { generateId } from '../../utils/ids';
 
 interface CardEditorProps {
   initialCard: Card | null;
+  mode: BoardMode;
   onSave: (card: Card) => void;
   onClose: () => void;
 }
 
-export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, onSave, onClose }) => {
+export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSave, onClose }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [monto, setMonto] = useState<string>('');
@@ -37,7 +39,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, onSave, onC
       id: initialCard?.id || generateId(),
       title: title.trim(),
       description: description.trim(),
-      monto: monto !== '' ? parseFloat(monto) : undefined,
+      monto: mode === 'monthly' && monto !== '' ? parseFloat(monto) : undefined,
       priority,
       status: initialCard?.status || 'open',
       scheduledDate: scheduledDate || undefined,
@@ -81,18 +83,20 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, onSave, onC
             />
           </div>
 
-          <div className={styles.formGroup}>
-            <label htmlFor="monto">Monto</label>
-            <input
-              id="monto"
-              type="number"
-              min="0"
-              step="0.01"
-              value={monto}
-              onChange={(e) => setMonto(e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
+          {mode === 'monthly' && (
+            <div className={styles.formGroup}>
+              <label htmlFor="monto">Monto</label>
+              <input
+                id="monto"
+                type="number"
+                min="0"
+                step="0.01"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+          )}
 
           <div className={styles.formGroup}>
             <label htmlFor="priority">Prioridad</label>
@@ -108,7 +112,9 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, onSave, onC
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="scheduledDate">Programado Para:</label>
+            <label htmlFor="scheduledDate">
+              {mode === 'monthly' ? 'Programado Para:' : 'Fecha Límite:'}
+            </label>
             <input
               id="scheduledDate"
               type="date"

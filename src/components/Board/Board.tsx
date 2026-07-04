@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import styles from './Board.module.css';
 import { useBoard } from '../../hooks/useBoard';
 import { Header } from '../Header/Header';
 import { Column } from '../Column/Column';
 import { CardEditor } from '../CardEditor/CardEditor';
 import type { Card } from '../../models/Card';
+import { getColumnId } from '../../utils/dates';
 
 export const Board: React.FC = () => {
   const {
+    mode,
     columns,
+    projects,
+    activeProjectId,
     addCard,
     updateCard,
     toggleCardStatus,
@@ -16,8 +20,59 @@ export const Board: React.FC = () => {
     moveCard,
     reorderCard,
     moveCardToIndex,
-    duplicateCard
+    duplicateCard,
+    ensureColumn,
+    rolloverCards,
+    setMode,
+    addProject,
+    switchProject
   } = useBoard();
+
+  const [viewDate, setViewDate] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
+
+  const visibleColumns = useMemo(() => {
+    if (mode === 'status') {
+      return columns;
+    }
+
+    const visible = [];
+    for (let i = 0; i < 4; i++) {
+      const targetDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + i, 1);
+      const id = getColumnId(targetDate);
+      let col = columns.find(c => c.id === id);
+
+      if (!col) {
+        col = { id, month: targetDate.getMonth(), year: targetDate.getFullYear(), cards: [] };
+      }
+      visible.push(col);
+    }
+    return visible;
+  }, [viewDate, columns, mode]);
+
+  useEffect(() => {
+    if (mode === 'monthly') {
+      visibleColumns.forEach(col => {
+        if (!columns.some(c => c.id === col.id)) {
+          ensureColumn(col.id, col.month!, col.year!);
+        }
+      });
+    }
+  }, [visibleColumns, columns, ensureColumn, mode]);
+
+  const navigateMonths = (delta: number) => {
+    setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+  };
+
+  const handleReset = () => {
+    const d = new Date();
+    d.setDate(1);
+    setViewDate(d);
+  };
+
   const [editorState, setEditorState] = useState<{
     isOpen: boolean;
     columnId: string | null;
@@ -58,31 +113,56 @@ export const Board: React.FC = () => {
 
   return (
     <div className={styles.boardContainer}>
-      <Header columns={columns} />
+      <Header
+        columns={visibleColumns}
+        onNavigate={navigateMonths}
+        onReset={handleReset}
+        mode={mode}
+        onModeChange={setMode}
+        projects={projects}
+        activeProjectId={activeProjectId}
+        onProjectChange={switchProject}
+        onAddProject={addProject}
+      />
       
-      <main className={styles.columnsContainer}>
-        {columns.map((col, index) => (
+      <main className={`${styles.columnsContainer} ${mode === 'status' ? styles.statusMode : ''}`}>
+        {visibleColumns.map((col, index) => (
           <Column 
             key={col.id} 
             column={col} 
+            mode={mode}
             onAddCard={() => handleOpenEditor(col.id)}
             onEditCard={(card) => handleOpenEditor(col.id, card)}
             onDeleteCard={(cardId) => removeCard(col.id, cardId)}
             onToggleCardStatus={(cardId) => toggleCardStatus(col.id, cardId)}
             onDuplicateCard={(cardId) => duplicateCard(col.id, cardId)}
-            onMoveLeft={
-              index > 0 
-                ? (cardId) => moveCard(col.id, columns[index - 1].id, cardId)
-                : undefined
-            }
-            onMoveRight={
-              index < columns.length - 1 
-                ? (cardId) => moveCard(col.id, columns[index + 1].id, cardId)
-                : undefined
-            }
+            onMoveLeft={(cardId) => {
+              if (mode === 'monthly') {
+                const prevColDate = new Date(col.year!, col.month! - 1, 1);
+                moveCard(col.id, getColumnId(prevColDate), cardId);
+              } else {
+                if (index > 0) {
+                  moveCard(col.id, visibleColumns[index - 1].id, cardId);
+                }
+              }
+            }}
+            onMoveRight={(cardId) => {
+              if (mode === 'monthly') {
+                const nextColDate = new Date(col.year!, col.month! + 1, 1);
+                moveCard(col.id, getColumnId(nextColDate), cardId);
+              } else {
+                if (index < visibleColumns.length - 1) {
+                  moveCard(col.id, visibleColumns[index + 1].id, cardId);
+                }
+              }
+            }}
             onReorderCard={(startIndex, endIndex) => reorderCard(col.id, startIndex, endIndex)}
             onDragStart={(cardId) => handleDragStart(cardId, col.id)}
             onDrop={(destIndex) => handleDrop(col.id, destIndex)}
+            onRollover={() => {
+              const nextColDate = new Date(col.year, col.month + 1, 1);
+              rolloverCards(col.id, getColumnId(nextColDate));
+            }}
           />
         ))}
       </main>
@@ -90,6 +170,7 @@ export const Board: React.FC = () => {
       {editorState.isOpen && (
         <CardEditor
           initialCard={editorState.cardToEdit}
+          mode={mode}
           onSave={handleSaveCard}
           onClose={handleCloseEditor}
         />

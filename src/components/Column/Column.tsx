@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import styles from './Column.module.css';
 import type { Column as ColumnModel } from '../../models/Column';
 import type { Card as CardModel } from '../../models/Card';
+import type { BoardMode } from '../../models/Board';
 import { Card } from '../Card/Card';
 
 interface ColumnProps {
   column: ColumnModel;
+  mode?: BoardMode;
   onAddCard: () => void;
   onEditCard: (card: CardModel) => void;
   onDeleteCard: (cardId: string) => void;
@@ -16,10 +18,12 @@ interface ColumnProps {
   onReorderCard: (startIndex: number, endIndex: number) => void;
   onDragStart: (cardId: string) => void;
   onDrop: (destIndex: number) => void;
+  onRollover: () => void;
 }
 
 export const Column: React.FC<ColumnProps> = ({
   column,
+  mode = 'monthly',
   onAddCard,
   onEditCard,
   onDeleteCard,
@@ -30,8 +34,20 @@ export const Column: React.FC<ColumnProps> = ({
   onReorderCard,
   onDragStart,
   onDrop,
+  onRollover,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const openCards = column.cards.filter(c => c.status !== 'closed');
+  const hasOpenCards = openCards.length > 0;
+
+  const isPast = useMemo(() => {
+    if (column.year === undefined || column.month === undefined) return false;
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    return column.year < currentYear || (column.year === currentYear && column.month < currentMonth);
+  }, [column.year, column.month]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -78,7 +94,16 @@ export const Column: React.FC<ColumnProps> = ({
           +
         </button>
       </div>
-      
+
+      {isPast && hasOpenCards && (
+        <div className={styles.rolloverAlert}>
+          <p>Tienes {openCards.length} pendientes</p>
+          <button onClick={onRollover} className={styles.rolloverBtn}>
+            Mover al siguiente mes →
+          </button>
+        </div>
+      )}
+
       <div className={styles.cardList}>
         {[...column.cards]
           .sort((a, b) => {
@@ -91,6 +116,7 @@ export const Column: React.FC<ColumnProps> = ({
           <Card 
             key={card.id} 
             card={card} 
+            mode={mode}
             onEdit={() => onEditCard(card)}
             onDelete={() => onDeleteCard(card.id)}
             onToggleStatus={() => onToggleCardStatus(card.id)}

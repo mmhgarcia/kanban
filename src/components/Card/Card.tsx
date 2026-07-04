@@ -1,10 +1,12 @@
 import React from 'react';
 import styles from './Card.module.css';
 import type { Card as CardModel } from '../../models/Card';
+import type { BoardMode } from '../../models/Board';
 import { formatFriendlyDate } from '../../utils/dates';
 
 interface CardProps {
   card: CardModel;
+  mode?: BoardMode;
   onEdit: () => void;
   onDelete: () => void;
   onToggleStatus: () => void;
@@ -20,7 +22,8 @@ interface CardProps {
 
 export const Card: React.FC<CardProps> = ({ 
   card, 
-  onEdit, 
+  mode = 'monthly',
+  onEdit,
   onDelete,
   onToggleStatus,
   onDuplicate,
@@ -72,7 +75,7 @@ export const Card: React.FC<CardProps> = ({
       
       <h3 className={styles.title}>{card.title}</h3>
       {card.description && <p className={styles.description}>{card.description}</p>}
-      {card.monto !== undefined && (
+      {mode === 'monthly' && card.monto !== undefined && (
         <div className={styles.monto}>
           $ {card.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
@@ -80,7 +83,8 @@ export const Card: React.FC<CardProps> = ({
       
       {card.scheduledDate && (
         <div className={styles.scheduledDate}>
-          Programado Para: {card.scheduledDate}
+          {mode === 'monthly' ? 'Programado Para: ' : 'Vencimiento: '}
+          {card.scheduledDate}
         </div>
       )}
       
