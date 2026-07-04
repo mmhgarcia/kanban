@@ -73,6 +73,27 @@
   background-color: #ff5d78;
 }
 
+.removeProjectBtn {
+  background-color: transparent;
+  color: #a0a0a0;
+  border: 1px solid #2a2a4a;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.removeProjectBtn:hover {
+  color: #e94560;
+  border-color: #e94560;
+  background-color: rgba(233, 69, 96, 0.1);
+}
+
 .modeSwitcher {
   display: flex;
   background-color: #16213e;
@@ -131,13 +152,17 @@
 }
 
 .monthsContainer {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   gap: 20px;
 }
 
+.monthsContainer > * {
+  min-width: 300px;
+  flex: 1;
+}
+
 .monthsContainer.statusMode {
-  grid-template-columns: repeat(5, 1fr);
+  /* Dynamic behavior handled by flex */
 }
 
 .monthLabel {

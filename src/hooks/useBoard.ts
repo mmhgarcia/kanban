@@ -325,6 +325,37 @@ export function useBoard() {
     });
   }, []);
 
+  const addColumn = useCallback((title: string) => {
+    if (board.mode !== 'status') return;
+    const newColumn: Column = {
+      id: generateId(),
+      title,
+      cards: []
+    };
+    updateColumnsInState([...columns, newColumn]);
+  }, [board.mode, columns, updateColumnsInState]);
+
+  const removeColumn = useCallback((columnId: string) => {
+    if (board.mode !== 'status') return;
+    const newColumns = columns.filter(col => col.id !== columnId);
+    updateColumnsInState(newColumns);
+  }, [board.mode, columns, updateColumnsInState]);
+
+  const renameColumn = useCallback((columnId: string, newTitle: string) => {
+    const newColumns = columns.map(col =>
+      col.id === columnId ? { ...col, title: newTitle } : col
+    );
+    updateColumnsInState(newColumns);
+  }, [columns, updateColumnsInState]);
+
+  const reorderColumn = useCallback((startIndex: number, endIndex: number) => {
+    if (board.mode !== 'status') return;
+    const newColumns = Array.from(columns);
+    const [removed] = newColumns.splice(startIndex, 1);
+    newColumns.splice(endIndex, 0, removed);
+    updateColumnsInState(newColumns);
+  }, [board.mode, columns, updateColumnsInState]);
+
   return {
     mode: board.mode,
     columns,
@@ -344,6 +375,10 @@ export function useBoard() {
     addProject,
     switchProject,
     renameProject,
-    removeProject
+    removeProject,
+    addColumn,
+    removeColumn,
+    renameColumn,
+    reorderColumn
   };
 }

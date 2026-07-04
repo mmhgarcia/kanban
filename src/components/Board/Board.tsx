@@ -25,7 +25,13 @@ export const Board: React.FC = () => {
     rolloverCards,
     setMode,
     addProject,
-    switchProject
+    switchProject,
+    renameProject,
+    removeProject,
+    addColumn,
+    removeColumn,
+    renameColumn,
+    reorderColumn
   } = useBoard();
 
   const [viewDate, setViewDate] = useState(() => {
@@ -123,6 +129,7 @@ export const Board: React.FC = () => {
         activeProjectId={activeProjectId}
         onProjectChange={switchProject}
         onAddProject={addProject}
+        onRemoveProject={removeProject}
       />
       
       <main className={`${styles.columnsContainer} ${mode === 'status' ? styles.statusMode : ''}`}>
@@ -133,7 +140,11 @@ export const Board: React.FC = () => {
             mode={mode}
             onAddCard={() => handleOpenEditor(col.id)}
             onEditCard={(card) => handleOpenEditor(col.id, card)}
-            onDeleteCard={(cardId) => removeCard(col.id, cardId)}
+            onDeleteCard={(cardId) => {
+              if (confirm('¿Estás seguro de que deseas eliminar esta tarjeta?')) {
+                removeCard(col.id, cardId);
+              }
+            }}
             onToggleCardStatus={(cardId) => toggleCardStatus(col.id, cardId)}
             onDuplicateCard={(cardId) => duplicateCard(col.id, cardId)}
             onMoveLeft={(cardId) => {
@@ -160,11 +171,29 @@ export const Board: React.FC = () => {
             onDragStart={(cardId) => handleDragStart(cardId, col.id)}
             onDrop={(destIndex) => handleDrop(col.id, destIndex)}
             onRollover={() => {
-              const nextColDate = new Date(col.year, col.month + 1, 1);
-              rolloverCards(col.id, getColumnId(nextColDate));
+              if (col.year !== undefined && col.month !== undefined) {
+                const nextColDate = new Date(col.year, col.month + 1, 1);
+                rolloverCards(col.id, getColumnId(nextColDate));
+              }
             }}
+            onRename={mode === 'status' ? (newName) => renameColumn(col.id, newName) : undefined}
+            onDelete={mode === 'status' ? () => removeColumn(col.id) : undefined}
+            onMoveLeftCol={mode === 'status' && index > 0 ? () => reorderColumn(index, index - 1) : undefined}
+            onMoveRightCol={mode === 'status' && index < visibleColumns.length - 1 ? () => reorderColumn(index, index + 1) : undefined}
           />
         ))}
+
+        {mode === 'status' && (
+          <button
+            className={styles.addColumnBtn}
+            onClick={() => {
+              const name = prompt('Nombre de la nueva columna:');
+              if (name && name.trim()) addColumn(name.trim());
+            }}
+          >
+            + Añadir Columna
+          </button>
+        )}
       </main>
 
       {editorState.isOpen && (

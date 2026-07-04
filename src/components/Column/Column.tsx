@@ -4,6 +4,7 @@ import type { Column as ColumnModel } from '../../models/Column';
 import type { Card as CardModel } from '../../models/Card';
 import type { BoardMode } from '../../models/Board';
 import { Card } from '../Card/Card';
+import { formatColumnTitle } from '../../utils/dates';
 
 interface ColumnProps {
   column: ColumnModel;
@@ -19,6 +20,10 @@ interface ColumnProps {
   onDragStart: (cardId: string) => void;
   onDrop: (destIndex: number) => void;
   onRollover: () => void;
+  onRename?: (newName: string) => void;
+  onDelete?: () => void;
+  onMoveLeftCol?: () => void;
+  onMoveRightCol?: () => void;
 }
 
 export const Column: React.FC<ColumnProps> = ({
@@ -35,6 +40,10 @@ export const Column: React.FC<ColumnProps> = ({
   onDragStart,
   onDrop,
   onRollover,
+  onRename,
+  onDelete,
+  onMoveLeftCol,
+  onMoveRightCol,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -67,6 +76,25 @@ export const Column: React.FC<ColumnProps> = ({
     onDrop(index !== undefined ? index : column.cards.length);
   };
 
+  const handleRename = () => {
+    if (!onRename) return;
+    const newName = prompt('Nuevo nombre para la columna:', column.title);
+    if (newName && newName.trim()) {
+      onRename(newName.trim());
+    }
+  };
+
+  const handleDelete = () => {
+    if (!onDelete) return;
+    const message = column.cards.length > 0
+      ? 'Esta columna tiene tarjetas. ¿Estás seguro de que quieres eliminarla con todo su contenido?'
+      : '¿Estás seguro de que quieres eliminar esta columna?';
+
+    if (confirm(message)) {
+      onDelete();
+    }
+  };
+
   return (
     <div 
       className={`${styles.column} ${isDragOver ? styles.dragOver : ''}`}
@@ -74,12 +102,18 @@ export const Column: React.FC<ColumnProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={(e) => handleDropEvent(e)}
     >
+      <div className={styles.columnTitle}>
+        {mode === 'monthly'
+          ? formatColumnTitle(column.month!, column.year!)
+          : column.title}
+      </div>
+
       <div className={styles.columnHeader}>
         <div className={styles.headerLeft}>
           <span className={styles.cardCount}>
             {column.cards.filter(c => c.status !== 'closed').length}
           </span>
-          {(() => {
+          {mode === 'monthly' && (() => {
             const total = column.cards
               .filter(c => c.status !== 'closed')
               .reduce((sum, c) => sum + (c.monto ?? 0), 0);
@@ -90,9 +124,16 @@ export const Column: React.FC<ColumnProps> = ({
             ) : null;
           })()}
         </div>
-        <button className={styles.addButton} onClick={onAddCard} title="Agregar nueva tarjeta">
-          +
-        </button>
+
+        <div className={styles.headerActions}>
+          {onMoveLeftCol && <button onClick={onMoveLeftCol} className={styles.headerBtn} title="Mover columna a la izquierda">⇠</button>}
+          {onRename && <button onClick={handleRename} className={styles.headerBtn} title="Renombrar columna">✎</button>}
+          {onDelete && <button onClick={handleDelete} className={styles.headerBtn} title="Eliminar columna">🗑</button>}
+          {onMoveRightCol && <button onClick={onMoveRightCol} className={styles.headerBtn} title="Mover columna a la derecha">⇢</button>}
+          <button className={styles.addButton} onClick={onAddCard} title="Agregar nueva tarjeta">
+            +
+          </button>
+        </div>
       </div>
 
       {isPast && hasOpenCards && (

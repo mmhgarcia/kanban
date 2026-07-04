@@ -7,8 +7,7 @@
 }
 
 .columnsContainer {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex; /* Changed from grid to flex for better dynamic behavior */
   gap: 20px;
   padding: 20px;
   flex: 1;
@@ -16,6 +15,30 @@
   align-items: flex-start;
 }
 
+.columnsContainer > * {
+  min-width: 300px;
+  flex: 1;
+}
+
 .statusMode {
-  grid-template-columns: repeat(5, 1fr);
+  /* Dynamic behavior handled by flex */
+}
+
+.addColumnBtn {
+  background-color: rgba(233, 69, 96, 0.1);
+  color: #e94560;
+  border: 2px dashed #e94560;
+  border-radius: 12px;
+  padding: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: fit-content;
+  min-width: 200px;
+}
+
+.addColumnBtn:hover {
+  background-color: rgba(233, 69, 96, 0.2);
+  transform: translateY(-2px);
 }

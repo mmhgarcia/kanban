@@ -9,6 +9,19 @@
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.columnTitle {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  padding: 8px;
+  margin-bottom: 12px;
+  background-color: #16213e;
+  border-radius: 8px;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
 .dragOver {
   background-color: #1e2d4a;
   box-shadow: 0 0 0 2px #e94560, 0 8px 24px rgba(233, 69, 96, 0.2);
@@ -36,6 +49,32 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Slightly more gap */
+}
+
+.headerBtn {
+  background: none;
+  border: none;
+  color: #6c757d; /* Softer color */
+  cursor: pointer;
+  font-size: 18px; /* Slightly larger icons */
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headerBtn:hover {
+  color: #fff;
+  background-color: rgba(233, 69, 96, 0.2);
+  transform: translateY(-1px);
 }
 
 .montoTotal {

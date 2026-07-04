@@ -14,6 +14,7 @@ interface HeaderProps {
   activeProjectId: string;
   onProjectChange: (id: string) => void;
   onAddProject: (name: string) => void;
+  onRemoveProject: (id: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,12 +26,27 @@ export const Header: React.FC<HeaderProps> = ({
   projects,
   activeProjectId,
   onProjectChange,
-  onAddProject
+  onAddProject,
+  onRemoveProject
 }) => {
   const handleAddProject = () => {
     const name = prompt('Nombre del nuevo proyecto:');
     if (name && name.trim()) {
       onAddProject(name.trim());
+    }
+  };
+
+  const handleRemoveProject = () => {
+    const project = projects.find(p => p.id === activeProjectId);
+    if (!project) return;
+
+    if (projects.length <= 1) {
+      alert('No puedes eliminar el único proyecto existente.');
+      return;
+    }
+
+    if (confirm(`¿Estás seguro de que deseas eliminar el proyecto "${project.name}" y todas sus columnas?`)) {
+      onRemoveProject(activeProjectId);
     }
   };
 
@@ -70,6 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
                 ))}
               </select>
               <button onClick={handleAddProject} className={styles.addProjectBtn} title="Nuevo Proyecto">+</button>
+              <button onClick={handleRemoveProject} className={styles.removeProjectBtn} title="Eliminar Proyecto">🗑</button>
             </div>
           )}
         </div>
@@ -81,15 +98,6 @@ export const Header: React.FC<HeaderProps> = ({
             <button onClick={() => onNavigate(1)} className={styles.navBtn} title="Siguiente mes">▶</button>
           </div>
         )}
-      </div>
-      <div className={`${styles.monthsContainer} ${mode === 'status' ? styles.statusMode : ''}`}>
-        {columns.map((col) => (
-          <div key={col.id} className={styles.monthLabel}>
-            {mode === 'monthly'
-              ? formatColumnTitle(col.month!, col.year!)
-              : col.title}
-          </div>
-        ))}
       </div>
     </header>
   );
