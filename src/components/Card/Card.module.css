@@ -1,17 +1,16 @@
 .card {
   background-color: #16213e;
   border-radius: 8px;
-  padding: 15px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
   border: 1px solid #2a2a4a;
   cursor: grab;
-  max-height: 250px;
+  max-height: 350px;
   overflow-y: auto;
-  flex-shrink: 0; /* Evita que la tarjeta se aplaste */
+  flex-shrink: 0;
 }
 
 /* Personalización del scrollbar para que sea sutil */
@@ -98,10 +97,48 @@
 }
 
 .title {
-  margin: 0;
+  margin: 10px 0 5px 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: #fff;
+}
+
+.imageContainer {
+  width: 100%;
+  margin: 0;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+  border-bottom: 1px solid #2a2a4a;
+  background-color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.imageContainer img {
+  width: 100%;
+  display: block;
+  max-height: 140px;
+  object-fit: cover;
+  cursor: zoom-in;
+  transition: opacity 0.2s;
+}
+
+.imageContainer img:hover {
+  opacity: 0.8;
+}
+
+.header, .title, .description, .monto, .scheduledDate, .footer {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+.header {
+  padding-top: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .description {

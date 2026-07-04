@@ -11,4 +11,5 @@ export interface Card {
   created: string; // ISO date string
   updated: string; // ISO date string
   scheduledDate?: string; // YYYY-MM-DD
+  image?: string; // Base64 string
 }

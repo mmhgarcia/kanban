@@ -17,9 +17,12 @@
   border-radius: 12px;
   width: 100%;
   max-width: 500px;
+  max-height: 90vh;
   padding: 24px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   border: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
@@ -27,6 +30,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  flex-shrink: 0;
 }
 
 .header h2 {
@@ -53,6 +57,27 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow-y: auto;
+  padding-right: 10px;
+  flex: 1;
+}
+
+/* Scrollbar para el formulario */
+.form::-webkit-scrollbar {
+  width: 5px;
+}
+
+.form::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.form::-webkit-scrollbar-thumb {
+  background: #2a2a4a;
+  border-radius: 5px;
+}
+
+.form::-webkit-scrollbar-thumb:hover {
+  background: #e94560;
 }
 
 .formGroup {
@@ -128,4 +153,47 @@
 .saveBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.fileInput {
+  font-size: 14px;
+}
+
+.loadingText {
+  color: #ffb703;
+  font-size: 12px;
+  margin: 0;
+}
+
+.imagePreview {
+  position: relative;
+  margin-top: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #2a2a4a;
+}
+
+.imagePreview img {
+  width: 100%;
+  display: block;
+  max-height: 200px;
+  object-fit: contain;
+  background-color: #000;
+}
+
+.removeImgBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(233, 69, 96, 0.8);
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.removeImgBtn:hover {
+  background-color: #e94560;
 }

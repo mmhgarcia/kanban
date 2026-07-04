@@ -3,6 +3,7 @@ import styles from './CardEditor.module.css';
 import type { Card, CardPriority } from '../../models/Card';
 import type { BoardMode } from '../../models/Board';
 import { generateId } from '../../utils/ids';
+import { compressImage } from '../../utils/images';
 
 interface CardEditorProps {
   initialCard: Card | null;
@@ -17,6 +18,8 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
   const [monto, setMonto] = useState<string>('');
   const [priority, setPriority] = useState<CardPriority>('medium');
   const [scheduledDate, setScheduledDate] = useState('');
+  const [image, setImage] = useState<string | undefined>('');
+  const [isCompressing, setIsCompressing] = useState(false);
 
   useEffect(() => {
     if (initialCard) {
@@ -24,11 +27,28 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
       setDescription(initialCard.description);
       setMonto(initialCard.monto !== undefined ? String(initialCard.monto) : '');
       setPriority(initialCard.priority);
+      setImage(initialCard.image);
       if (initialCard.scheduledDate) {
         setScheduledDate(initialCard.scheduledDate);
       }
     }
   }, [initialCard]);
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsCompressing(true);
+      const compressed = await compressImage(file);
+      setImage(compressed);
+    } catch (error) {
+      console.error('Error compressing image', error);
+      alert('Error al procesar la imagen');
+    } finally {
+      setIsCompressing(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +63,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
       priority,
       status: initialCard?.status || 'open',
       scheduledDate: scheduledDate || undefined,
+      image,
       created: initialCard?.created || now,
       updated: now,
     };
@@ -123,11 +144,35 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
             />
           </div>
 
+          <div className={styles.formGroup}>
+            <label htmlFor="image">Imagen de Refuerzo (Opcional)</label>
+            <input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className={styles.fileInput}
+            />
+            {isCompressing && <p className={styles.loadingText}>Comprimiendo imagen...</p>}
+            {image && (
+              <div className={styles.imagePreview}>
+                <img src={image} alt="Vista previa" />
+                <button
+                  type="button"
+                  className={styles.removeImgBtn}
+                  onClick={() => setImage(undefined)}
+                >
+                  Eliminar Imagen
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className={styles.footer}>
             <button type="button" className={styles.cancelBtn} onClick={onClose}>
               Cancelar
             </button>
-            <button type="submit" className={styles.saveBtn} disabled={!title.trim()}>
+            <button type="submit" className={styles.saveBtn} disabled={!title.trim() || isCompressing}>
               Guardar
             </button>
           </div>
