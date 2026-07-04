@@ -1,0 +1,126 @@
+.card {
+  background-color: #16213e;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  border: 1px solid #2a2a4a;
+  cursor: grab;
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.closed {
+  filter: grayscale(1);
+  opacity: 0.5;
+  background-color: #111a30;
+  border-color: #1a243d;
+}
+
+.closed .title {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.closed .priorityIndicator {
+  filter: grayscale(1);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.priorityIndicator {
+  width: 30px;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.low { background-color: #4caf50; }
+.medium { background-color: #ff9800; }
+.high { background-color: #f44336; }
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px; /* Increased from 14px */
+  opacity: 0.7;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  padding: 0 2px;
+}
+
+.actionBtn:hover {
+  opacity: 1;
+}
+
+.actionBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.2;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.description {
+  margin: 0;
+  font-size: 14px;
+  color: #a0a0a0;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.monto {
+  font-size: 15px;
+  font-weight: 700;
+  color: #4ade80;
+  font-family: 'Courier New', monospace;
+  background-color: rgba(74, 222, 128, 0.08);
+  padding: 3px 8px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.scheduledDate {
+  font-size: 13px;
+  color: #ffb703;
+  font-weight: 500;
+  background-color: rgba(255, 183, 3, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #2a2a4a;
+}
+
+.date {
+  font-size: 11px;
+  color: #6c757d;
+}
