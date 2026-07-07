@@ -44,14 +44,36 @@ export const Header: React.FC<HeaderProps> = ({
     recognition.lang = 'es-ES';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+    recognition.continuous = true; // Mantener abierto aunque haya pausas breves
 
-    recognition.onstart = () => setIsListening(true);
+    let silenceTimer: number;
+
+    const stopRecognition = () => {
+      recognition.stop();
+      setIsListening(false);
+      clearTimeout(silenceTimer);
+    };
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      // Timer de seguridad por si no se habla nada
+      silenceTimer = window.setTimeout(stopRecognition, 5000);
+    };
+
     recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      clearTimeout(silenceTimer);
+    };
 
     recognition.onresult = (event: any) => {
-      const text = event.results[0][0].transcript;
+      clearTimeout(silenceTimer);
+      const text = event.results[event.results.length - 1][0].transcript;
       onVoiceCommand(text);
+
+      // Detener automáticamente después de recibir el comando
+      // pero damos un pequeño margen
+      silenceTimer = window.setTimeout(stopRecognition, 1000);
     };
 
     recognition.start();
@@ -100,6 +122,14 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className={styles.center}>
+          <button
+            onClick={handleVoiceButtonClick}
+            className={`${styles.voiceBtn} ${isListening ? styles.listening : ''}`}
+            title="Comando de voz (Ej: 'Cerrar 1')"
+          >
+            {isListening ? '🎙️' : '🎤'}
+          </button>
+
           {mode === 'status' && (
             <div className={styles.projectSelector}>
               <label htmlFor="project-select">Proyecto:</label>
@@ -120,14 +150,6 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className={styles.navigation}>
-          <button
-            onClick={handleVoiceButtonClick}
-            className={`${styles.navBtn} ${isListening ? styles.listening : ''}`}
-            title="Comando de voz (Ej: 'Cerrar 1')"
-          >
-            {isListening ? '🎙️...' : '🎤'}
-          </button>
-
           {mode === 'monthly' && (
             <>
               <button onClick={() => onNavigate(-1)} className={styles.navBtn} title="Mes anterior">◀</button>

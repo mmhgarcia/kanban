@@ -19,12 +19,12 @@ export const VoiceHelpModal: React.FC<VoiceHelpModalProps> = ({ onClose }) => {
             <h3>📄 Crear Tarjetas</h3>
             <ul className={styles.commandList}>
               <li className={styles.commandItem}>
-                <span className={styles.example}>"Nueva tarjeta en Julio"</span>
-                <span className={styles.description}>Abre el editor en el mes o columna indicada.</span>
+                <span className={styles.example}>"Nueva tarjeta en Julio Pagar el Agua"</span>
+                <span className={styles.description}>Abre el editor con el título y la fecha autocompletada.</span>
               </li>
               <li className={styles.commandItem}>
-                <span className={styles.example}>"Añadir en Backlog"</span>
-                <span className={styles.description}>Funciona con nombres de meses o de estados.</span>
+                <span className={styles.example}>"Añadir en Backlog Diseño de Logo"</span>
+                <span className={styles.description}>Funciona con nombres de meses o de estados + el título.</span>
               </li>
             </ul>
           </div>

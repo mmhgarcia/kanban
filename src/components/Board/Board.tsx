@@ -112,7 +112,9 @@ export const Board: React.FC = () => {
 
   const handleSaveCard = (card: Card) => {
     if (editorState.columnId) {
-      if (editorState.cardToEdit) {
+      // Si la tarjeta inicial tiene un ID, es una edición.
+      // Si no tiene ID (o el objeto era nulo), es una tarjeta nueva.
+      if (editorState.cardToEdit && editorState.cardToEdit.id) {
         updateCard(editorState.columnId, card);
       } else {
         addCard(editorState.columnId, card);
@@ -169,27 +171,52 @@ export const Board: React.FC = () => {
     // Caso especial: AÑADIR (no requiere ID de tarjeta)
     if (intent === 'ADD') {
       const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+      const skipWords = ['tarjeta', 'en', 'el', 'la', 'un', 'una', 'con', 'del', 'al'];
+      const intentKeywords = INTENTS.ADD;
 
       for (const col of visibleColumns) {
+        let colName = '';
         if (mode === 'monthly') {
-          const monthName = monthNames[col.month!];
-          if (cleanText.includes(monthName)) {
-            // Calcular fecha: día actual en el mes indicado
+          colName = monthNames[col.month!];
+        } else {
+          colName = col.title?.toLowerCase() || '';
+        }
+
+        if (colName && cleanText.includes(colName)) {
+          // Extraer el título del texto hablado
+          let title = cleanText;
+
+          // Eliminar la intención
+          intentKeywords.forEach(kw => {
+            title = title.replace(new RegExp(`\\b${kw}\\b`, 'gi'), '');
+          });
+
+          // Eliminar el nombre del mes/columna
+          title = title.replace(new RegExp(`\\b${colName}\\b`, 'gi'), '');
+
+          // Eliminar palabras de enlace
+          skipWords.forEach(sw => {
+            title = title.replace(new RegExp(`\\b${sw}\\b`, 'gi'), '');
+          });
+
+          // Limpiar espacios y capitalizar
+          title = title.replace(/\s+/g, ' ').trim();
+          if (title) {
+            title = title.charAt(0).toUpperCase() + title.slice(1);
+          }
+
+          if (mode === 'monthly') {
             const today = new Date();
             const dayNum = today.getDate();
             const lastDayInTargetMonth = new Date(col.year!, col.month! + 1, 0).getDate();
             const finalDay = Math.min(dayNum, lastDayInTargetMonth);
-
             const scheduledDate = `${col.year}-${String(col.month! + 1).padStart(2, '0')}-${String(finalDay).padStart(2, '0')}`;
 
-            handleOpenEditor(col.id, { scheduledDate } as Card);
-            return;
+            handleOpenEditor(col.id, { scheduledDate, title } as Card);
+          } else {
+            handleOpenEditor(col.id, { title } as Card);
           }
-        } else {
-          if (col.title && cleanText.includes(col.title.toLowerCase())) {
-            handleOpenEditor(col.id);
-            return;
-          }
+          return;
         }
       }
       alert(`¿En qué columna quieres añadir la tarjeta? No escuché el nombre del mes o de la columna.`);
