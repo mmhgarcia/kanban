@@ -104,6 +104,7 @@
 }
 
 .imageContainer {
+  position: relative;
   width: 100%;
   margin: 0;
   border-radius: 8px 8px 0 0;
@@ -127,6 +128,50 @@
 
 .imageContainer img:hover {
   opacity: 0.8;
+}
+
+.navBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(26, 26, 46, 0.7);
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.navBtn:hover {
+  background-color: #e94560;
+}
+
+.prev {
+  left: 5px;
+}
+
+.next {
+  right: 5px;
+}
+
+.imageCounter {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background-color: rgba(26, 26, 46, 0.8);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  z-index: 10;
 }
 
 .header, .title, .description, .monto, .scheduledDate, .footer {

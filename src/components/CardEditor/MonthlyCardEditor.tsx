@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import styles from './CardEditor.module.css';
 import type { Card, CardPriority } from '../../models/Card';
-import type { BoardMode } from '../../models/Board';
 import { generateId } from '../../utils/ids';
 import { compressImage } from '../../utils/images';
 
-interface CardEditorProps {
+interface MonthlyCardEditorProps {
   initialCard: Card | null;
-  mode: BoardMode;
   onSave: (card: Card) => void;
   onClose: () => void;
 }
 
-export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSave, onClose }) => {
+export const MonthlyCardEditor: React.FC<MonthlyCardEditorProps> = ({ initialCard, onSave, onClose }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [monto, setMonto] = useState<string>('');
@@ -28,7 +26,6 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
       setMonto(initialCard.monto !== undefined ? String(initialCard.monto) : '');
       setPriority(initialCard.priority);
 
-      // Handle migration from single image if necessary
       if (initialCard.images) {
         setImages(initialCard.images);
       } else if ((initialCard as any).image) {
@@ -48,19 +45,16 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
     try {
       setIsCompressing(true);
       const newImages: string[] = [];
-
       for (let i = 0; i < files.length; i++) {
         const compressed = await compressImage(files[i]);
         newImages.push(compressed);
       }
-
       setImages(prev => [...prev, ...newImages]);
     } catch (error) {
       console.error('Error compressing images', error);
       alert('Error al procesar las imágenes');
     } finally {
       setIsCompressing(false);
-      // Reset input value to allow selecting same file again
       e.target.value = '';
     }
   };
@@ -78,7 +72,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
       id: initialCard?.id || generateId(),
       title: title.trim(),
       description: description.trim(),
-      monto: mode === 'monthly' && monto !== '' ? parseFloat(monto) : undefined,
+      monto: monto !== '' ? parseFloat(monto) : undefined,
       priority,
       status: initialCard?.status || 'open',
       scheduledDate: scheduledDate || undefined,
@@ -94,10 +88,10 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2>{initialCard ? 'Editar Tarjeta' : 'Nueva Tarjeta'}</h2>
+          <h2>{initialCard ? 'Editar Gasto/Tarea' : 'Nuevo Gasto/Tarea'}</h2>
           <button className={styles.closeBtn} onClick={onClose}>×</button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
             <label htmlFor="title">Título</label>
@@ -106,37 +100,34 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ej. Llamar al cliente..."
+              placeholder="Ej. Pago de Alquiler..."
               autoFocus
               required
             />
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="description">Descripción</label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detalles de la tarea..."
-              rows={4}
+            <label htmlFor="monto">Monto ($)</label>
+            <input
+              id="monto"
+              type="number"
+              min="0"
+              step="0.01"
+              value={monto}
+              onChange={(e) => setMonto(e.target.value)}
+              placeholder="0.00"
             />
           </div>
 
-          {mode === 'monthly' && (
-            <div className={styles.formGroup}>
-              <label htmlFor="monto">Monto</label>
-              <input
-                id="monto"
-                type="number"
-                min="0"
-                step="0.01"
-                value={monto}
-                onChange={(e) => setMonto(e.target.value)}
-                placeholder="0.00"
-              />
-            </div>
-          )}
+          <div className={styles.formGroup}>
+            <label htmlFor="scheduledDate">Programado Para:</label>
+            <input
+              id="scheduledDate"
+              type="date"
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+            />
+          </div>
 
           <div className={styles.formGroup}>
             <label htmlFor="priority">Prioridad</label>
@@ -152,19 +143,18 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="scheduledDate">
-              {mode === 'monthly' ? 'Programado Para:' : 'Fecha Límite:'}
-            </label>
-            <input
-              id="scheduledDate"
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
+            <label htmlFor="description">Descripción / Notas</label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Detalles adicionales..."
+              rows={4}
             />
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="images">Imágenes de Refuerzo (Opcional)</label>
+            <label htmlFor="images">Evidencias / Fotos (Múltiple)</label>
             <input
               id="images"
               type="file"
@@ -184,7 +174,6 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
                       type="button"
                       className={styles.removeThumbBtn}
                       onClick={() => removeImage(index)}
-                      title="Eliminar"
                     >
                       ×
                     </button>
@@ -199,7 +188,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ initialCard, mode, onSav
               Cancelar
             </button>
             <button type="submit" className={styles.saveBtn} disabled={!title.trim() || isCompressing}>
-              Guardar
+              Guardar Gasto
             </button>
           </div>
         </form>

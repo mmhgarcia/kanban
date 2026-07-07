@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './Card.module.css';
 import type { Card as CardModel } from '../../models/Card';
 import type { BoardMode } from '../../models/Board';
@@ -36,10 +36,15 @@ export const Card: React.FC<CardProps> = ({
   onDrop,
 }) => {
   const isClosed = card.status === 'closed';
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Handle migration and multi-images
+  const images = card.images || ((card as any).image ? [(card as any).image] : []);
 
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (card.image) {
+    if (images.length > 0) {
+      const currentImage = images[currentImageIndex];
       const win = window.open();
       if (win) {
         win.document.title = card.title;
@@ -51,7 +56,7 @@ export const Card: React.FC<CardProps> = ({
         win.document.body.style.minHeight = '100vh';
 
         const img = win.document.createElement('img');
-        img.src = card.image;
+        img.src = currentImage;
         img.style.maxWidth = '95%';
         img.style.maxHeight = '95vh';
         img.style.objectFit = 'contain';
@@ -63,6 +68,16 @@ export const Card: React.FC<CardProps> = ({
     }
   };
 
+  const nextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
   return (
     <div 
       className={`${styles.card} ${isClosed ? styles.closed : ''}`}
@@ -71,9 +86,24 @@ export const Card: React.FC<CardProps> = ({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      {card.image && (
-        <div className={styles.imageContainer} onClick={handleImageClick}>
-          <img src={card.image} alt={card.title} title="Click para ver en grande" />
+      {images.length > 0 && (
+        <div className={styles.imageContainer}>
+          <img
+            src={images[currentImageIndex]}
+            alt={card.title}
+            title="Click para ver en grande"
+            onClick={handleImageClick}
+          />
+
+          {images.length > 1 && (
+            <>
+              <button className={`${styles.navBtn} ${styles.prev}`} onClick={prevImage}>❮</button>
+              <button className={`${styles.navBtn} ${styles.next}`} onClick={nextImage}>❯</button>
+              <div className={styles.imageCounter}>
+                {currentImageIndex + 1} / {images.length}
+              </div>
+            </>
+          )}
         </div>
       )}
 

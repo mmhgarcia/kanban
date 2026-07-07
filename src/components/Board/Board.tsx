@@ -3,7 +3,8 @@ import styles from './Board.module.css';
 import { useBoard } from '../../hooks/useBoard';
 import { Header } from '../Header/Header';
 import { Column } from '../Column/Column';
-import { CardEditor } from '../CardEditor/CardEditor';
+import { MonthlyCardEditor } from '../CardEditor/MonthlyCardEditor';
+import { ProjectCardEditor } from '../CardEditor/ProjectCardEditor';
 import type { Card } from '../../models/Card';
 import { getColumnId } from '../../utils/dates';
 
@@ -196,10 +197,17 @@ export const Board: React.FC = () => {
         )}
       </main>
 
-      {editorState.isOpen && (
-        <CardEditor
+      {editorState.isOpen && mode === 'monthly' && (
+        <MonthlyCardEditor
           initialCard={editorState.cardToEdit}
-          mode={mode}
+          onSave={handleSaveCard}
+          onClose={handleCloseEditor}
+        />
+      )}
+
+      {editorState.isOpen && mode === 'status' && (
+        <ProjectCardEditor
+          initialCard={editorState.cardToEdit}
           onSave={handleSaveCard}
           onClose={handleCloseEditor}
         />
