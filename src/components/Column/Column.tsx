@@ -47,6 +47,7 @@ export const Column: React.FC<ColumnProps> = ({
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [showClosed, setShowClosed] = useState(true);
   const cardListRef = useRef<HTMLDivElement>(null);
   const prevCardsLength = useRef(column.cards.length);
 
@@ -146,6 +147,16 @@ export const Column: React.FC<ColumnProps> = ({
           {onMoveRightCol && <button onClick={onMoveRightCol} className={styles.headerBtn} title="Mover columna a la derecha">⇢</button>}
 
           {mode === 'monthly' && (
+            <button
+              className={`${styles.headerBtn} ${!showClosed ? styles.activeFilter : ''}`}
+              onClick={() => setShowClosed(!showClosed)}
+              title={showClosed ? "Ocultar tarjetas cerradas" : "Mostrar tarjetas cerradas"}
+            >
+              {showClosed ? '👁️' : '👁️‍🗨️'}
+            </button>
+          )}
+
+          {mode === 'monthly' && (
             <div className={styles.sortActions}>
               <button
                 className={`${styles.sortBtn} ${sortDirection === 'asc' ? styles.activeSort : ''}`}
@@ -180,39 +191,49 @@ export const Column: React.FC<ColumnProps> = ({
       )}
 
       <div className={styles.cardList} ref={cardListRef}>
-        {(mode === 'monthly'
-          ? [...column.cards].sort((a, b) => {
+        {(() => {
+          let filteredCards = [...column.cards];
+
+          // Apply visibility filter
+          if (mode === 'monthly' && !showClosed) {
+            filteredCards = filteredCards.filter(c => c.status !== 'closed');
+          }
+
+          // Apply sorting for monthly mode
+          if (mode === 'monthly') {
+            filteredCards.sort((a, b) => {
               const dateA = a.scheduledDate || '';
               const dateB = b.scheduledDate || '';
 
               if (!dateA && !dateB) return 0;
-              if (!dateA) return -1; // Cards without date at the top
+              if (!dateA) return -1;
               if (!dateB) return 1;
 
-              // Use current sort direction
               return sortDirection === 'desc'
                 ? dateB.localeCompare(dateA)
                 : dateA.localeCompare(dateB);
-            })
-          : column.cards
-        ).map((card, index) => (
-          <Card 
-            key={card.id} 
-            card={card} 
-            mode={mode}
-            onEdit={() => onEditCard(card)}
-            onDelete={() => onDeleteCard(card.id)}
-            onToggleStatus={() => onToggleCardStatus(card.id)}
-            onDuplicate={() => onDuplicateCard(card.id)}
-            onMoveLeft={onMoveLeft ? () => onMoveLeft(card.id) : undefined}
-            onMoveRight={onMoveRight ? () => onMoveRight(card.id) : undefined}
-            onMoveUp={index > 0 ? () => onReorderCard(index, index - 1) : undefined}
-            onMoveDown={index < column.cards.length - 1 ? () => onReorderCard(index, index + 1) : undefined}
-            onDragStart={() => onDragStart(card.id)}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDropEvent(e, index)}
-          />
-        ))}
+            });
+          }
+
+          return filteredCards.map((card, index) => (
+            <Card
+              key={card.id}
+              card={card}
+              mode={mode}
+              onEdit={() => onEditCard(card)}
+              onDelete={() => onDeleteCard(card.id)}
+              onToggleStatus={() => onToggleCardStatus(card.id)}
+              onDuplicate={() => onDuplicateCard(card.id)}
+              onMoveLeft={onMoveLeft ? () => onMoveLeft(card.id) : undefined}
+              onMoveRight={onMoveRight ? () => onMoveRight(card.id) : undefined}
+              onMoveUp={index > 0 ? () => onReorderCard(index, index - 1) : undefined}
+              onMoveDown={index < filteredCards.length - 1 ? () => onReorderCard(index, index + 1) : undefined}
+              onDragStart={() => onDragStart(card.id)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDropEvent(e, index)}
+            />
+          ));
+        })()}
       </div>
     </div>
   );

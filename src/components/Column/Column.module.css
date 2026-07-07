@@ -107,6 +107,11 @@
   transform: translateY(-1px);
 }
 
+.activeFilter {
+  color: #e94560 !important;
+  background-color: rgba(233, 69, 96, 0.1);
+}
+
 .montoTotal {
   font-size: 13px;
   font-weight: 700;
