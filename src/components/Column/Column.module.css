@@ -52,6 +52,35 @@
   gap: 8px;
 }
 
+.sortActions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: 8px; /* Espacio antes del botón + */
+}
+
+.sortBtn {
+  background: none;
+  border: none;
+  color: #6c757d;
+  font-size: 12px; /* Un poco más grandes para facilitar la manipulación */
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.sortBtn:hover {
+  color: #e94560;
+  transform: scale(1.2);
+}
+
+.activeSort {
+  color: #e94560;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(233, 69, 96, 0.5);
+}
+
 .headerActions {
   display: flex;
   align-items: center;

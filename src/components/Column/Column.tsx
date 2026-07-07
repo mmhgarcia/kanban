@@ -46,6 +46,7 @@ export const Column: React.FC<ColumnProps> = ({
   onMoveRightCol,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const cardListRef = useRef<HTMLDivElement>(null);
   const prevCardsLength = useRef(column.cards.length);
 
@@ -125,6 +126,7 @@ export const Column: React.FC<ColumnProps> = ({
           <span className={styles.cardCount}>
             {column.cards.filter(c => c.status !== 'closed').length}
           </span>
+
           {mode === 'monthly' && (() => {
             const total = column.cards
               .filter(c => c.status !== 'closed')
@@ -142,6 +144,26 @@ export const Column: React.FC<ColumnProps> = ({
           {onRename && <button onClick={handleRename} className={styles.headerBtn} title="Renombrar columna">✎</button>}
           {onDelete && <button onClick={handleDelete} className={styles.headerBtn} title="Eliminar columna">🗑</button>}
           {onMoveRightCol && <button onClick={onMoveRightCol} className={styles.headerBtn} title="Mover columna a la derecha">⇢</button>}
+
+          {mode === 'monthly' && (
+            <div className={styles.sortActions}>
+              <button
+                className={`${styles.sortBtn} ${sortDirection === 'asc' ? styles.activeSort : ''}`}
+                onClick={() => setSortDirection('asc')}
+                title="Ordenar por fecha ascendente"
+              >
+                ▲
+              </button>
+              <button
+                className={`${styles.sortBtn} ${sortDirection === 'desc' ? styles.activeSort : ''}`}
+                onClick={() => setSortDirection('desc')}
+                title="Ordenar por fecha descendente"
+              >
+                ▼
+              </button>
+            </div>
+          )}
+
           <button className={styles.addButton} onClick={onAddCard} title="Agregar nueva tarjeta">
             +
           </button>
@@ -167,8 +189,10 @@ export const Column: React.FC<ColumnProps> = ({
               if (!dateA) return -1; // Cards without date at the top
               if (!dateB) return 1;
 
-              // Descending order (latest dates first)
-              return dateB.localeCompare(dateA);
+              // Use current sort direction
+              return sortDirection === 'desc'
+                ? dateB.localeCompare(dateA)
+                : dateA.localeCompare(dateB);
             })
           : column.cards
         ).map((card, index) => (
