@@ -21,10 +21,10 @@ export const MonthlyCardEditor: React.FC<MonthlyCardEditorProps> = ({ initialCar
 
   useEffect(() => {
     if (initialCard) {
-      setTitle(initialCard.title);
-      setDescription(initialCard.description);
+      setTitle(initialCard.title || '');
+      setDescription(initialCard.description || '');
       setMonto(initialCard.monto !== undefined ? String(initialCard.monto) : '');
-      setPriority(initialCard.priority);
+      setPriority(initialCard.priority || 'medium');
 
       if (initialCard.images) {
         setImages(initialCard.images);
@@ -70,6 +70,7 @@ export const MonthlyCardEditor: React.FC<MonthlyCardEditorProps> = ({ initialCar
     const now = new Date().toISOString();
     const card: Card = {
       id: initialCard?.id || generateId(),
+      displayId: initialCard?.displayId,
       title: title.trim(),
       description: description.trim(),
       monto: monto !== '' ? parseFloat(monto) : undefined,

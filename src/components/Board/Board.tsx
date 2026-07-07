@@ -5,6 +5,7 @@ import { Header } from '../Header/Header';
 import { Column } from '../Column/Column';
 import { MonthlyCardEditor } from '../CardEditor/MonthlyCardEditor';
 import { ProjectCardEditor } from '../CardEditor/ProjectCardEditor';
+import { VoiceHelpModal } from '../VoiceHelpModal/VoiceHelpModal';
 import type { Card } from '../../models/Card';
 import { getColumnId } from '../../utils/dates';
 
@@ -86,6 +87,8 @@ export const Board: React.FC = () => {
     cardToEdit: Card | null;
   }>({ isOpen: false, columnId: null, cardToEdit: null });
 
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
   const [draggedCard, setDraggedCard] = useState<{ id: string; columnId: string } | null>(null);
 
   const handleDragStart = (cardId: string, columnId: string) => {
@@ -120,73 +123,157 @@ export const Board: React.FC = () => {
 
   const handleVoiceCommand = (text: string) => {
     const cleanText = text.toLowerCase().trim();
-    console.log('Comando de voz recibido:', cleanText);
+    console.log('Análisis semántico de:', cleanText);
 
-    // Mapeo de números escritos a dígitos por si el navegador transcribe palabras
+    // 1. Clusters Semánticos (Intenciones)
+    const INTENTS = {
+      CLOSE: ['cerrar', 'terminé', 'terminada', 'lista', 'listo', 'hecho', 'completa', 'finaliza', 'liquida', 'concluye', 'cierra'],
+      OPEN: ['abrir', 'reabrir', 'pendiente', 'activa', 'otra vez', 'nuevo', 'abre', 'activar', 'regresa'],
+      DELETE: ['eliminar', 'borra', 'quitar', 'basura', 'suprime', 'fuera', 'elimina', 'quítame', 'deshazte'],
+      EDIT: ['editar', 'edita', 'modificar', 'modifica', 'cambiar', 'cambia', 'corrige', 'corregir'],
+      UP: ['subir', 'arriba', 'encima', 'anterior', 'sube'],
+      DOWN: ['bajar', 'abajo', 'debajo', 'siguiente', 'baja'],
+      LEFT: ['izquierda', 'atrás', 'atras', 'atrasar', 'anterior'],
+      RIGHT: ['derecha', 'adelante', 'proximo', 'próximo', 'siguiente', 'avanza'],
+      ADD: ['nueva', 'nuevo', 'añadir', 'añade', 'agrega', 'agregar', 'crear', 'crea'],
+      HELP: ['ayuda', 'help', 'comandos', 'instrucciones', 'qué puedo decir', 'que puedo decir']
+    };
+
+    const getIntent = (txt: string) => {
+      if (INTENTS.HELP.some(word => txt.includes(word))) return 'HELP';
+      if (INTENTS.ADD.some(word => txt.includes(word))) return 'ADD';
+      if (INTENTS.DELETE.some(word => txt.includes(word))) return 'DELETE';
+      if (INTENTS.EDIT.some(word => txt.includes(word))) return 'EDIT';
+      if (INTENTS.UP.some(word => txt.includes(word))) return 'UP';
+      if (INTENTS.DOWN.some(word => txt.includes(word))) return 'DOWN';
+      if (INTENTS.LEFT.some(word => txt.includes(word))) return 'LEFT';
+      if (INTENTS.RIGHT.some(word => txt.includes(word))) return 'RIGHT';
+      if (INTENTS.OPEN.some(word => txt.includes(word))) return 'OPEN';
+      if (INTENTS.CLOSE.some(word => txt.includes(word))) return 'CLOSE';
+      return null;
+    };
+
+    const intent = getIntent(cleanText);
+
+    if (!intent) {
+      alert(`No entendí qué quieres hacer. Prueba con "Ayuda", "Nueva tarjeta en julio" o "Cerrar 5".`);
+      return;
+    }
+
+    // Caso especial: AYUDA
+    if (intent === 'HELP') {
+      setIsHelpOpen(true);
+      return;
+    }
+
+    // Caso especial: AÑADIR (no requiere ID de tarjeta)
+    if (intent === 'ADD') {
+      const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+      for (const col of visibleColumns) {
+        if (mode === 'monthly') {
+          const monthName = monthNames[col.month!];
+          if (cleanText.includes(monthName)) {
+            // Calcular fecha: día actual en el mes indicado
+            const today = new Date();
+            const dayNum = today.getDate();
+            const lastDayInTargetMonth = new Date(col.year!, col.month! + 1, 0).getDate();
+            const finalDay = Math.min(dayNum, lastDayInTargetMonth);
+
+            const scheduledDate = `${col.year}-${String(col.month! + 1).padStart(2, '0')}-${String(finalDay).padStart(2, '0')}`;
+
+            handleOpenEditor(col.id, { scheduledDate } as Card);
+            return;
+          }
+        } else {
+          if (col.title && cleanText.includes(col.title.toLowerCase())) {
+            handleOpenEditor(col.id);
+            return;
+          }
+        }
+      }
+      alert(`¿En qué columna quieres añadir la tarjeta? No escuché el nombre del mes o de la columna.`);
+      return;
+    }
+
+    // Resto de intenciones requieren un ID numérico
     const wordNumbers: { [key: string]: number } = {
       'uno': 1, 'una': 1, 'dos': 2, 'tres': 3, 'cuatro': 4, 'cinco': 5,
       'seis': 6, 'siete': 7, 'ocho': 8, 'nueve': 9, 'diez': 10
     };
 
-    // Buscamos número en dígitos o en palabras
     let id: number | null = null;
     const digitMatch = cleanText.match(/\d+/);
-
     if (digitMatch) {
       id = parseInt(digitMatch[0]);
     } else {
-      // Si no hay dígitos, buscamos palabras (uno, dos...)
       for (const [word, val] of Object.entries(wordNumbers)) {
-        if (cleanText.includes(word)) {
-          id = val;
-          break;
-        }
+        if (cleanText.includes(word)) { id = val; break; }
       }
     }
 
     if (id === null) {
-      alert(`No identifiqué el número de tarjeta. Prueba con "Cerrar 5" o "Borra la 8". (Escuché: "${text}")`);
+      alert(`Para esta acción necesito el número de la tarjeta. (Escuché: "${text}")`);
       return;
     }
 
-    // Determinamos la acción por palabras clave
-    const isCloseCommand = /cerrar|terminar|completar|finalizar|cierra/.test(cleanText);
-    const isOpenCommand = /abrir|reabrir|activar|abre|abierto/.test(cleanText);
-    const isDeleteCommand = /eliminar|elimina|borrar|borra/.test(cleanText);
+    // Ejecución según intención con ID
+    for (let i = 0; i < visibleColumns.length; i++) {
+      const col = visibleColumns[i];
+      const cardIdx = col.cards.findIndex(c => c.displayId === id);
 
-    if (!isCloseCommand && !isOpenCommand && !isDeleteCommand) {
-      alert(`No entendí la acción. Prueba con "Cerrar", "Reabrir" o "Eliminar". (Escuché: "${text}")`);
-      return;
-    }
+      if (cardIdx !== -1) {
+        const card = col.cards[cardIdx];
 
-    // Buscar la tarjeta en todas las columnas
-    for (const col of columns) {
-      const card = col.cards.find(c => c.displayId === id);
-      if (card) {
-        if (isDeleteCommand) {
-          const confirmacion = window.confirm(`⚠️ ELIMINACIÓN POR VOZ\n\n¿Estás seguro de que deseas borrar la tarjeta #${id}?\n"${card.title}"`);
-          if (confirmacion) {
-            removeCard(col.id, card.id);
-          }
-          return;
-        }
+        switch (intent) {
+          case 'DELETE':
+            if (window.confirm(`⚠️ ELIMINACIÓN SEMÁNTICA\n\n¿Deseas borrar la tarjeta #${id}?\n"${card.title}"`)) {
+              removeCard(col.id, card.id);
+            }
+            break;
 
-        const isCurrentlyClosed = card.status === 'closed';
+          case 'EDIT':
+            handleOpenEditor(col.id, card);
+            break;
 
-        // Si pides abrir y está cerrada, o pides cerrar y está abierta -> Togleamos
-        const needsToggle = (isOpenCommand && isCurrentlyClosed) ||
-                            (isCloseCommand && !isCurrentlyClosed);
+          case 'UP':
+            if (cardIdx > 0) reorderCard(col.id, cardIdx, cardIdx - 1);
+            break;
 
-        if (needsToggle) {
-          toggleCardStatus(col.id, card.id);
-        } else {
-          const statusTxt = isCurrentlyClosed ? 'cerrada' : 'abierta';
-          console.log(`La tarjeta #${id} ya está ${statusTxt}.`);
+          case 'DOWN':
+            if (cardIdx < col.cards.length - 1) reorderCard(col.id, cardIdx, cardIdx + 1);
+            break;
+
+          case 'LEFT':
+            if (mode === 'monthly') {
+              const prevDate = new Date(col.year!, col.month! - 1, 1);
+              moveCard(col.id, getColumnId(prevDate), card.id);
+            } else if (i > 0) {
+              moveCard(col.id, visibleColumns[i - 1].id, card.id);
+            }
+            break;
+
+          case 'RIGHT':
+            if (mode === 'monthly') {
+              const nextDate = new Date(col.year!, col.month! + 1, 1);
+              moveCard(col.id, getColumnId(nextDate), card.id);
+            } else if (i < visibleColumns.length - 1) {
+              moveCard(col.id, visibleColumns[i + 1].id, card.id);
+            }
+            break;
+
+          default:
+            const isCurrentlyClosed = card.status === 'closed';
+            const shouldBeClosed = intent === 'CLOSE';
+
+            if (isCurrentlyClosed !== shouldBeClosed) {
+              toggleCardStatus(col.id, card.id);
+            }
         }
         return;
       }
     }
-    alert(`No encontré la tarjeta #${id} en el tablero actual.`);
+    alert(`No encontré la tarjeta #${id} en las columnas visibles.`);
   };
 
   return (
@@ -283,6 +370,10 @@ export const Board: React.FC = () => {
           onSave={handleSaveCard}
           onClose={handleCloseEditor}
         />
+      )}
+
+      {isHelpOpen && (
+        <VoiceHelpModal onClose={() => setIsHelpOpen(false)} />
       )}
     </div>
   );

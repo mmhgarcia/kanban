@@ -3,7 +3,7 @@ export type CardStatus = 'open' | 'closed';
 
 export interface Card {
   id: string;
-  displayId: number; // Human readable ID (e.g., 1, 2, 3)
+  displayId?: number; // Human readable ID (e.g., 1, 2, 3)
   title: string;
   description: string;
   monto?: number;

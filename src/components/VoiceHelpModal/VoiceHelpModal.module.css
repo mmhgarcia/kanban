@@ -1,0 +1,119 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(6px);
+}
+
+.modal {
+  background-color: #1a1a2e;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  padding: 30px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  border: 1px solid #e94560;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #2a2a4a;
+  padding-bottom: 15px;
+}
+
+.header h2 {
+  margin: 0;
+  color: #e94560;
+  font-size: 24px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  font-size: 32px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.closeBtn:hover {
+  color: #e94560;
+}
+
+.content {
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.section {
+  margin-bottom: 25px;
+}
+
+.section h3 {
+  color: #4ade80;
+  font-size: 18px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.commandList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.commandItem {
+  background-color: #16213e;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #2a2a4a;
+}
+
+.example {
+  font-family: 'Courier New', monospace;
+  color: #ffb703;
+  font-weight: bold;
+}
+
+.description {
+  display: block;
+  font-size: 13px;
+  color: #a0a0a0;
+  margin-top: 4px;
+}
+
+.footer {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: #2a2a4a;
+  border-radius: 5px;
+}

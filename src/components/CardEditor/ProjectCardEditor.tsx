@@ -20,9 +20,9 @@ export const ProjectCardEditor: React.FC<ProjectCardEditorProps> = ({ initialCar
 
   useEffect(() => {
     if (initialCard) {
-      setTitle(initialCard.title);
-      setDescription(initialCard.description);
-      setPriority(initialCard.priority);
+      setTitle(initialCard.title || '');
+      setDescription(initialCard.description || '');
+      setPriority(initialCard.priority || 'medium');
 
       if (initialCard.images) {
         setImages(initialCard.images);
@@ -68,6 +68,7 @@ export const ProjectCardEditor: React.FC<ProjectCardEditorProps> = ({ initialCar
     const now = new Date().toISOString();
     const card: Card = {
       id: initialCard?.id || generateId(),
+      displayId: initialCard?.displayId,
       title: title.trim(),
       description: description.trim(),
       priority,
