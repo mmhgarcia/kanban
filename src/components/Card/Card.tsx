@@ -108,7 +108,10 @@ export const Card: React.FC<CardProps> = ({
       )}
 
       <div className={styles.header}>
-        <span className={`${styles.priorityIndicator} ${styles[card.priority]}`} />
+        <div className={styles.headerLeftInfo}>
+          <span className={styles.cardId}>#{card.displayId}</span>
+          <span className={`${styles.priorityIndicator} ${styles[card.priority]}`} />
+        </div>
         <div className={styles.actions}>
           {onMoveUp && (
             <button onClick={onMoveUp} className={styles.actionBtn} title="Subir" disabled={isClosed}>⬆️</button>

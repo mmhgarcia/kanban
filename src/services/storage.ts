@@ -2,7 +2,7 @@ import type { Board } from '../models/Board';
 import { getInitialColumns } from '../utils/dates';
 import { getInitialStatusColumns } from '../utils/statusColumns';
 
-const STORAGE_KEY = 'kanban-board-v3';
+const STORAGE_KEY = 'kanban-board-v4'; // Upgrading to v4 for displayId
 
 export function loadBoard(): Board {
   try {
@@ -11,20 +11,32 @@ export function loadBoard(): Board {
       return JSON.parse(data) as Board;
     }
 
-    // Migration from v2
-    const oldData = localStorage.getItem('kanban-board-v2');
+    // Migration from v3
+    const oldData = localStorage.getItem('kanban-board-v3');
     if (oldData) {
-      const v2 = JSON.parse(oldData);
-      const monthly = v2.mode === 'monthly' ? v2.columns : v2.backupColumns;
-      const status = v2.mode === 'status' ? v2.columns : v2.backupColumns;
+      const v3 = JSON.parse(oldData);
+      let nextId = 1;
+
+      const assignIds = (columns: any[]) => {
+        if (!columns) return;
+        columns.forEach(col => {
+          if (!col.cards) return;
+          col.cards.forEach((card: any) => {
+            if (!card.displayId) {
+              card.displayId = nextId++;
+            } else if (card.displayId >= nextId) {
+              nextId = card.displayId + 1;
+            }
+          });
+        });
+      };
+
+      assignIds(v3.monthlyColumns);
+      v3.projects?.forEach((p: any) => assignIds(p.columns));
 
       return {
-        mode: v2.mode || 'monthly',
-        monthlyColumns: monthly || getInitialColumns(),
-        projects: [
-          { id: 'default', name: 'Principal', columns: status || getInitialStatusColumns() }
-        ],
-        activeProjectId: 'default'
+        ...v3,
+        nextCardNumber: nextId
       };
     }
   } catch (error) {
@@ -38,7 +50,8 @@ export function loadBoard(): Board {
     projects: [
       { id: 'default', name: 'Principal', columns: getInitialStatusColumns() }
     ],
-    activeProjectId: 'default'
+    activeProjectId: 'default',
+    nextCardNumber: 1
   };
 }
 

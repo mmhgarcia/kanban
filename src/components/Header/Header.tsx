@@ -15,6 +15,7 @@ interface HeaderProps {
   onProjectChange: (id: string) => void;
   onAddProject: (name: string) => void;
   onRemoveProject: (id: string) => void;
+  onVoiceCommand: (text: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,8 +28,35 @@ export const Header: React.FC<HeaderProps> = ({
   activeProjectId,
   onProjectChange,
   onAddProject,
-  onRemoveProject
+  onRemoveProject,
+  onVoiceCommand
 }) => {
+  const [isListening, setIsListening] = React.useState(false);
+
+  const handleVoiceButtonClick = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Tu navegador no soporta reconocimiento de voz.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.onresult = (event: any) => {
+      const text = event.results[0][0].transcript;
+      onVoiceCommand(text);
+    };
+
+    recognition.start();
+  };
+
   const handleAddProject = () => {
     const name = prompt('Nombre del nuevo proyecto:');
     if (name && name.trim()) {
@@ -91,13 +119,23 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {mode === 'monthly' && (
-          <div className={styles.navigation}>
-            <button onClick={() => onNavigate(-1)} className={styles.navBtn} title="Mes anterior">◀</button>
-            <button onClick={onReset} className={styles.navBtn} title="Ir a hoy">Hoy</button>
-            <button onClick={() => onNavigate(1)} className={styles.navBtn} title="Siguiente mes">▶</button>
-          </div>
-        )}
+        <div className={styles.navigation}>
+          <button
+            onClick={handleVoiceButtonClick}
+            className={`${styles.navBtn} ${isListening ? styles.listening : ''}`}
+            title="Comando de voz (Ej: 'Cerrar 1')"
+          >
+            {isListening ? '🎙️...' : '🎤'}
+          </button>
+
+          {mode === 'monthly' && (
+            <>
+              <button onClick={() => onNavigate(-1)} className={styles.navBtn} title="Mes anterior">◀</button>
+              <button onClick={onReset} className={styles.navBtn} title="Ir a hoy">Hoy</button>
+              <button onClick={() => onNavigate(1)} className={styles.navBtn} title="Siguiente mes">▶</button>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

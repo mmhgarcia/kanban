@@ -37,14 +37,34 @@ export function useBoard() {
   }, []);
 
   const addCard = useCallback((columnId: string, card: Card) => {
-    const newColumns = columns.map(col => {
-      if (col.id === columnId) {
-        return { ...col, cards: [card, ...col.cards] };
+    setBoard(prev => {
+      const displayId = prev.nextCardNumber;
+      const cardWithId = { ...card, displayId };
+
+      const updateCols = (cols: Column[]) => cols.map(col => {
+        if (col.id === columnId) {
+          return { ...col, cards: [cardWithId, ...col.cards] };
+        }
+        return col;
+      });
+
+      if (prev.mode === 'monthly') {
+        return {
+          ...prev,
+          monthlyColumns: updateCols(prev.monthlyColumns),
+          nextCardNumber: prev.nextCardNumber + 1
+        };
+      } else {
+        return {
+          ...prev,
+          projects: prev.projects.map(p =>
+            p.id === prev.activeProjectId ? { ...p, columns: updateCols(p.columns) } : p
+          ),
+          nextCardNumber: prev.nextCardNumber + 1
+        };
       }
-      return col;
     });
-    updateColumnsInState(newColumns);
-  }, [columns, updateColumnsInState]);
+  }, []);
 
   const updateCard = useCallback((columnId: string, updatedCard: Card) => {
     const newColumns = columns.map(col => {
@@ -206,26 +226,50 @@ export function useBoard() {
   }, [columns, board.mode, updateColumnsInState]);
 
   const duplicateCard = useCallback((columnId: string, cardId: string) => {
-    const newColumns = columns.map(col => {
-      if (col.id !== columnId) return col;
-      const idx = col.cards.findIndex(c => c.id === cardId);
-      if (idx === -1) return col;
-      const original = col.cards[idx];
-      const now = new Date().toISOString();
-      const clone: Card = {
-        ...original,
-        id: generateId(),
-        title: `${original.title} (copia)`,
-        status: 'open',
-        created: now,
-        updated: now,
-      };
-      const newCards = Array.from(col.cards);
-      newCards.splice(idx + 1, 0, clone);
-      return { ...col, cards: newCards };
+    setBoard((prev) => {
+      const displayId = prev.nextCardNumber;
+      let cardFound = false;
+
+      const updateCols = (cols: Column[]) => cols.map((col) => {
+        if (col.id !== columnId) return col;
+        const idx = col.cards.findIndex(c => c.id === cardId);
+        if (idx === -1) return col;
+        cardFound = true;
+        const original = col.cards[idx];
+        const now = new Date().toISOString();
+        const clone: Card = {
+          ...original,
+          id: generateId(),
+          displayId,
+          title: `${original.title} (copia)`,
+          status: 'open',
+          created: now,
+          updated: now,
+        };
+        const newCards = Array.from(col.cards);
+        newCards.splice(idx + 1, 0, clone);
+        return { ...col, cards: newCards };
+      });
+
+      if (prev.mode === 'monthly') {
+        const newCols = updateCols(prev.monthlyColumns);
+        return {
+          ...prev,
+          monthlyColumns: newCols,
+          nextCardNumber: cardFound ? prev.nextCardNumber + 1 : prev.nextCardNumber
+        };
+      } else {
+        const newProjects = prev.projects.map(p =>
+          p.id === prev.activeProjectId ? { ...p, columns: updateCols(p.columns) } : p
+        );
+        return {
+          ...prev,
+          projects: newProjects,
+          nextCardNumber: cardFound ? prev.nextCardNumber + 1 : prev.nextCardNumber
+        };
+      }
     });
-    updateColumnsInState(newColumns);
-  }, [columns, updateColumnsInState]);
+  }, []);
 
   const ensureColumn = useCallback((id: string, month: number, year: number) => {
     if (board.mode !== 'monthly') return;

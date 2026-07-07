@@ -186,6 +186,22 @@
   align-items: flex-start;
 }
 
+.headerLeftInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cardId {
+  font-size: 10px;
+  font-weight: 800;
+  color: #e94560;
+  background-color: rgba(233, 69, 96, 0.1);
+  padding: 2px 5px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
 .description {
   margin: 0;
   font-size: 14px;

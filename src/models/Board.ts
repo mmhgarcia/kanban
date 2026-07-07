@@ -13,4 +13,5 @@ export interface Board {
   monthlyColumns: Column[];
   projects: Project[];
   activeProjectId: string;
+  nextCardNumber: number; // Counter for displayId
 }

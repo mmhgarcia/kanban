@@ -118,6 +118,77 @@ export const Board: React.FC = () => {
     handleCloseEditor();
   };
 
+  const handleVoiceCommand = (text: string) => {
+    const cleanText = text.toLowerCase().trim();
+    console.log('Comando de voz recibido:', cleanText);
+
+    // Mapeo de números escritos a dígitos por si el navegador transcribe palabras
+    const wordNumbers: { [key: string]: number } = {
+      'uno': 1, 'una': 1, 'dos': 2, 'tres': 3, 'cuatro': 4, 'cinco': 5,
+      'seis': 6, 'siete': 7, 'ocho': 8, 'nueve': 9, 'diez': 10
+    };
+
+    // Buscamos número en dígitos o en palabras
+    let id: number | null = null;
+    const digitMatch = cleanText.match(/\d+/);
+
+    if (digitMatch) {
+      id = parseInt(digitMatch[0]);
+    } else {
+      // Si no hay dígitos, buscamos palabras (uno, dos...)
+      for (const [word, val] of Object.entries(wordNumbers)) {
+        if (cleanText.includes(word)) {
+          id = val;
+          break;
+        }
+      }
+    }
+
+    if (id === null) {
+      alert(`No identifiqué el número de tarjeta. Prueba con "Cerrar 5" o "Borra la 8". (Escuché: "${text}")`);
+      return;
+    }
+
+    // Determinamos la acción por palabras clave
+    const isCloseCommand = /cerrar|terminar|completar|finalizar|cierra/.test(cleanText);
+    const isOpenCommand = /abrir|reabrir|activar|abre|abierto/.test(cleanText);
+    const isDeleteCommand = /eliminar|elimina|borrar|borra/.test(cleanText);
+
+    if (!isCloseCommand && !isOpenCommand && !isDeleteCommand) {
+      alert(`No entendí la acción. Prueba con "Cerrar", "Reabrir" o "Eliminar". (Escuché: "${text}")`);
+      return;
+    }
+
+    // Buscar la tarjeta en todas las columnas
+    for (const col of columns) {
+      const card = col.cards.find(c => c.displayId === id);
+      if (card) {
+        if (isDeleteCommand) {
+          const confirmacion = window.confirm(`⚠️ ELIMINACIÓN POR VOZ\n\n¿Estás seguro de que deseas borrar la tarjeta #${id}?\n"${card.title}"`);
+          if (confirmacion) {
+            removeCard(col.id, card.id);
+          }
+          return;
+        }
+
+        const isCurrentlyClosed = card.status === 'closed';
+
+        // Si pides abrir y está cerrada, o pides cerrar y está abierta -> Togleamos
+        const needsToggle = (isOpenCommand && isCurrentlyClosed) ||
+                            (isCloseCommand && !isCurrentlyClosed);
+
+        if (needsToggle) {
+          toggleCardStatus(col.id, card.id);
+        } else {
+          const statusTxt = isCurrentlyClosed ? 'cerrada' : 'abierta';
+          console.log(`La tarjeta #${id} ya está ${statusTxt}.`);
+        }
+        return;
+      }
+    }
+    alert(`No encontré la tarjeta #${id} en el tablero actual.`);
+  };
+
   return (
     <div className={styles.boardContainer}>
       <Header
@@ -131,6 +202,7 @@ export const Board: React.FC = () => {
         onProjectChange={switchProject}
         onAddProject={addProject}
         onRemoveProject={removeProject}
+        onVoiceCommand={handleVoiceCommand}
       />
       
       <main className={`${styles.columnsContainer} ${mode === 'status' ? styles.statusMode : ''}`}>
