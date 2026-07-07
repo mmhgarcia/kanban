@@ -290,47 +290,80 @@ export function useBoard() {
     });
   }, []);
 
-  const duplicateCard = useCallback((columnId: string, cardId: string) => {
+  const duplicateCard = useCallback((columnId: string, cardId: string, destColumnId?: string) => {
     setBoard((prev) => {
+      const targetColumnId = destColumnId || columnId;
       const displayId = prev.nextCardNumber;
-      let cardFound = false;
+      let cardToClone: Card | undefined;
 
-      const updateCols = (cols: Column[]) => cols.map((col) => {
-        if (col.id !== columnId) return col;
-        const idx = col.cards.findIndex(c => c.id === cardId);
-        if (idx === -1) return col;
-        cardFound = true;
-        const original = col.cards[idx];
-        const now = new Date().toISOString();
-        const clone: Card = {
-          ...original,
-          id: generateId(),
-          displayId,
-          title: `${original.title} (copia)`,
-          status: 'open',
-          created: now,
-          updated: now,
-        };
-        const newCards = Array.from(col.cards);
-        newCards.splice(idx + 1, 0, clone);
-        return { ...col, cards: newCards };
+      const currentCols = prev.mode === 'monthly' ? prev.monthlyColumns :
+                         (prev.projects.find(p => p.id === prev.activeProjectId)?.columns || []);
+
+      const sourceCol = currentCols.find(c => c.id === columnId);
+      if (sourceCol) {
+        cardToClone = sourceCol.cards.find(c => c.id === cardId);
+      }
+
+      if (!cardToClone) return prev;
+
+      const now = new Date().toISOString();
+      let clone: Card = {
+        ...cardToClone,
+        id: generateId(),
+        displayId,
+        title: `${cardToClone.title} (copia)`,
+        status: 'open',
+        created: now,
+        updated: now,
+      };
+
+      // Adjust date if duplicating to a different month
+      if (prev.mode === 'monthly' && destColumnId && destColumnId !== columnId) {
+        const day = clone.scheduledDate ? clone.scheduledDate.substring(8, 10) : '01';
+        clone.scheduledDate = `${destColumnId}-${day}`;
+      }
+
+      let destColExists = false;
+      const nextColumns = currentCols.map((col) => {
+        if (col.id === targetColumnId) {
+          destColExists = true;
+          const newCards = Array.from(col.cards);
+          if (targetColumnId === columnId) {
+            // If same column, place after original
+            const idx = col.cards.findIndex(c => c.id === cardId);
+            newCards.splice(idx + 1, 0, clone);
+          } else {
+            // If different column, place at top
+            newCards.unshift(clone);
+          }
+          return { ...col, cards: newCards };
+        }
+        return col;
       });
 
+      if (prev.mode === 'monthly' && !destColExists) {
+        const [year, month] = targetColumnId.split('-').map(Number);
+        nextColumns.push({
+          id: targetColumnId,
+          month: month - 1,
+          year,
+          cards: [clone]
+        });
+      }
+
       if (prev.mode === 'monthly') {
-        const newCols = updateCols(prev.monthlyColumns);
         return {
           ...prev,
-          monthlyColumns: newCols,
-          nextCardNumber: cardFound ? prev.nextCardNumber + 1 : prev.nextCardNumber
+          monthlyColumns: nextColumns,
+          nextCardNumber: prev.nextCardNumber + 1
         };
       } else {
-        const newProjects = prev.projects.map(p =>
-          p.id === prev.activeProjectId ? { ...p, columns: updateCols(p.columns) } : p
-        );
         return {
           ...prev,
-          projects: newProjects,
-          nextCardNumber: cardFound ? prev.nextCardNumber + 1 : prev.nextCardNumber
+          projects: prev.projects.map(p =>
+            p.id === prev.activeProjectId ? { ...p, columns: nextColumns } : p
+          ),
+          nextCardNumber: prev.nextCardNumber + 1
         };
       }
     });

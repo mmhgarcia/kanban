@@ -44,6 +44,10 @@ export const VoiceHelpModal: React.FC<VoiceHelpModalProps> = ({ onClose }) => {
                 <span className={styles.example}>"Editar número 8"</span>
                 <span className={styles.description}>Abre el editor para modificar la tarjeta #8.</span>
               </li>
+              <li className={styles.commandItem}>
+                <span className={styles.example}>"Duplicar la 5 en Agosto" / "Copia la 5"</span>
+                <span className={styles.description}>Crea una copia de la tarjeta en el mismo lugar o en otro mes/columna.</span>
+              </li>
             </ul>
           </div>
 

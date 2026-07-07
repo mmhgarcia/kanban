@@ -138,6 +138,7 @@ export const Board: React.FC = () => {
       LEFT: ['izquierda', 'atrás', 'atras', 'atrasar', 'anterior'],
       RIGHT: ['derecha', 'adelante', 'proximo', 'próximo', 'siguiente', 'avanza'],
       ADD: ['nueva', 'nuevo', 'añadir', 'añade', 'agrega', 'agregar', 'crear', 'crea'],
+      DUPLICATE: ['duplicar', 'duplica', 'copiar', 'copia', 'clonar', 'clona'],
       HELP: ['ayuda', 'help', 'comandos', 'instrucciones', 'qué puedo decir', 'que puedo decir']
     };
 
@@ -145,6 +146,7 @@ export const Board: React.FC = () => {
       if (INTENTS.HELP.some(word => txt.includes(word))) return 'HELP';
       if (INTENTS.ADD.some(word => txt.includes(word))) return 'ADD';
       if (INTENTS.DELETE.some(word => txt.includes(word))) return 'DELETE';
+      if (INTENTS.DUPLICATE.some(word => txt.includes(word))) return 'DUPLICATE';
       if (INTENTS.EDIT.some(word => txt.includes(word))) return 'EDIT';
       if (INTENTS.UP.some(word => txt.includes(word))) return 'UP';
       if (INTENTS.DOWN.some(word => txt.includes(word))) return 'DOWN';
@@ -262,6 +264,30 @@ export const Board: React.FC = () => {
           case 'EDIT':
             handleOpenEditor(col.id, card);
             break;
+
+          case 'DUPLICATE': {
+            const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            let destColId: string | undefined;
+
+            // Search for a target column/month in the text
+            for (const c of visibleColumns) {
+              if (mode === 'monthly') {
+                const monthName = monthNames[c.month!];
+                if (cleanText.includes(monthName)) {
+                  destColId = c.id;
+                  break;
+                }
+              } else {
+                if (c.title && cleanText.includes(c.title.toLowerCase())) {
+                  destColId = c.id;
+                  break;
+                }
+              }
+            }
+
+            duplicateCard(col.id, card.id, destColId);
+            break;
+          }
 
           case 'UP':
             if (cardIdx > 0) reorderCard(col.id, cardIdx, cardIdx - 1);
