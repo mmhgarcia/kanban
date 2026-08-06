@@ -9,18 +9,17 @@
 
 .titleSection {
   display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 20px;
+  flex-direction: column;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
-.left {
+.titleRow {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 20px;
-  flex-wrap: wrap;
+  width: 100%;
 }
 
 .voiceBtn {

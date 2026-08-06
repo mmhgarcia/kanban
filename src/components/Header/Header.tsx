@@ -99,28 +99,28 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className={styles.header}>
       <div className={styles.titleSection}>
-        <div className={styles.left}>
+        <div className={styles.titleRow}>
           <h1 className={styles.title}>Kanban Board</h1>
-          <div className={styles.modeSwitcher}>
-            <button
-              className={`${styles.modeBtn} ${mode === 'monthly' ? styles.active : ''}`}
-              onClick={() => onModeChange('monthly')}
-            >
-              Mensual
-            </button>
-            <button
-              className={`${styles.modeBtn} ${mode === 'status' ? styles.active : ''}`}
-              onClick={() => onModeChange('status')}
-            >
-              Estados
-            </button>
-          </div>
           <button
             onClick={handleVoiceButtonClick}
             className={`${styles.voiceBtn} ${isListening ? styles.listening : ''}`}
             title="Comando de voz (Ej: 'Cerrar 1')"
           >
             {isListening ? '🎙️' : '🎤'}
+          </button>
+        </div>
+        <div className={styles.modeSwitcher}>
+          <button
+            className={`${styles.modeBtn} ${mode === 'monthly' ? styles.active : ''}`}
+            onClick={() => onModeChange('monthly')}
+          >
+            Mensual
+          </button>
+          <button
+            className={`${styles.modeBtn} ${mode === 'status' ? styles.active : ''}`}
+            onClick={() => onModeChange('status')}
+          >
+            Estados
           </button>
         </div>
       </div>
