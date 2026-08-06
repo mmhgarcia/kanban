@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Board, BoardMode, Project } from '../models/Board';
 import type { Card, CardStatus } from '../models/Card';
 import type { Column } from '../models/Column';
@@ -6,12 +6,47 @@ import { loadBoard, saveBoard } from '../services/storage';
 import { generateId } from '../utils/ids';
 import { getInitialStatusColumns } from '../utils/statusColumns';
 
+function getDefaultBoard(): Board {
+  return {
+    mode: 'monthly',
+    monthlyColumns: [],
+    projects: [
+      { id: 'default', name: 'Principal', columns: getInitialStatusColumns() }
+    ],
+    activeProjectId: 'default',
+    nextCardNumber: 1
+  };
+}
+
 export function useBoard() {
-  const [board, setBoard] = useState<Board>(() => loadBoard());
+  const [board, setBoard] = useState<Board>(() => getDefaultBoard());
+  const [isLoaded, setIsLoaded] = useState(false);
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    saveBoard(board);
-  }, [board]);
+    isMounted.current = true;
+    (async () => {
+      const loadedBoard = await loadBoard();
+      if (isMounted.current) {
+        setBoard(loadedBoard);
+        setIsLoaded(true);
+      }
+    })();
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const persist = async () => {
+      await saveBoard(board);
+    };
+
+    persist();
+  }, [board, isLoaded]);
 
   const activeProject = useMemo(() => {
     return board.projects.find(p => p.id === board.activeProjectId) || board.projects[0];
