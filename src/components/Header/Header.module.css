@@ -29,6 +29,7 @@
   gap: 16px;
   flex: 1;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .projectSelector {
@@ -38,6 +39,45 @@
   background-color: #16213e;
   padding: 6px 12px;
   border-radius: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 740px) {
+  .titleSection {
+    align-items: flex-start;
+  }
+
+  .left,
+  .center {
+    width: 100%;
+  }
+
+  .left {
+    gap: 16px;
+  }
+
+  .center {
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
+  .projectSelector,
+  .modeSwitcher,
+  .navigation {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .navigation {
+    justify-content: flex-start;
+    margin-top: 0;
+  }
+
+  .navBtn {
+    flex: 1 1 auto;
+    min-width: 64px;
+  }
 }
 
 .projectSelector label {
