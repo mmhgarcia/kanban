@@ -115,15 +115,14 @@ export const Header: React.FC<HeaderProps> = ({
               Estados
             </button>
           </div>
+          <button
+            onClick={handleVoiceButtonClick}
+            className={`${styles.voiceBtn} ${isListening ? styles.listening : ''}`}
+            title="Comando de voz (Ej: 'Cerrar 1')"
+          >
+            {isListening ? '🎙️' : '🎤'}
+          </button>
         </div>
-
-        <button
-          onClick={handleVoiceButtonClick}
-          className={`${styles.voiceBtn} ${isListening ? styles.listening : ''}`}
-          title="Comando de voz (Ej: 'Cerrar 1')"
-        >
-          {isListening ? '🎙️' : '🎤'}
-        </button>
       </div>
 
       <div className={styles.controls}>
