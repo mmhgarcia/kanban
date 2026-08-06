@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Board, BoardMode, Project } from '../models/Board';
-import type { Card } from '../models/Card';
+import type { Card, CardStatus } from '../models/Card';
 import type { Column } from '../models/Column';
 import { loadBoard, saveBoard } from '../services/storage';
 import { generateId } from '../utils/ids';
@@ -78,13 +78,13 @@ export function useBoard() {
 
   const toggleCardStatus = useCallback((columnId: string, cardId: string) => {
     setBoard(prev => {
-      const updateCols = (cols: Column[]) => cols.map(col => {
+      const updateCols = (cols: Column[]): Column[] => cols.map(col => {
         if (col.id === columnId) {
           return {
             ...col,
             cards: col.cards.map(c => {
               if (c.id === cardId) {
-                const currentStatus = c.status || 'open';
+                const currentStatus: CardStatus = c.status === 'closed' ? 'closed' : 'open';
                 return {
                   ...c,
                   status: currentStatus === 'open' ? 'closed' : 'open',

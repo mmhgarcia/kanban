@@ -28,7 +28,6 @@ export const Board: React.FC = () => {
     setMode,
     addProject,
     switchProject,
-    renameProject,
     removeProject,
     addColumn,
     removeColumn,
@@ -332,7 +331,6 @@ export const Board: React.FC = () => {
   return (
     <div className={styles.boardContainer}>
       <Header
-        columns={visibleColumns}
         onNavigate={navigateMonths}
         onReset={handleReset}
         mode={mode}

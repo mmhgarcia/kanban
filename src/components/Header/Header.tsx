@@ -1,11 +1,8 @@
 import React from 'react';
 import styles from './Header.module.css';
-import type { Column } from '../../models/Column';
 import type { BoardMode, Project } from '../../models/Board';
-import { formatColumnTitle } from '../../utils/dates';
 
 interface HeaderProps {
-  columns: Column[];
   onNavigate: (delta: number) => void;
   onReset: () => void;
   mode: BoardMode;
@@ -19,7 +16,6 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  columns,
   onNavigate,
   onReset,
   mode,
