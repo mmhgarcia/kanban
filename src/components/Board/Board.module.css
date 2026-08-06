@@ -19,6 +19,19 @@
   flex: 1;
 }
 
+@media (max-width: 768px) {
+  .columnsContainer {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .columnsContainer > * {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
 .statusMode {
   /* Dynamic behavior handled by flex */
 }
