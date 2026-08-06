@@ -116,8 +116,10 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
         </div>
+      </div>
 
-        <div className={styles.center}>
+      <div className={styles.controls}>
+        <div className={styles.controlRow}>
           <button
             onClick={handleVoiceButtonClick}
             className={`${styles.voiceBtn} ${isListening ? styles.listening : ''}`}
@@ -139,21 +141,21 @@ export const Header: React.FC<HeaderProps> = ({
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
-              <button onClick={handleAddProject} className={styles.addProjectBtn} title="Nuevo Proyecto">+</button>
-              <button onClick={handleRemoveProject} className={styles.removeProjectBtn} title="Eliminar Proyecto">🗑</button>
+              <div className={styles.projectActions}>
+                <button onClick={handleAddProject} className={styles.addProjectBtn} title="Nuevo Proyecto">+</button>
+                <button onClick={handleRemoveProject} className={styles.removeProjectBtn} title="Eliminar Proyecto">🗑</button>
+              </div>
             </div>
           )}
         </div>
 
-        <div className={styles.navigation}>
-          {mode === 'monthly' && (
-            <>
-              <button onClick={() => onNavigate(-1)} className={styles.navBtn} title="Mes anterior">◀</button>
-              <button onClick={onReset} className={styles.navBtn} title="Ir a hoy">Hoy</button>
-              <button onClick={() => onNavigate(1)} className={styles.navBtn} title="Siguiente mes">▶</button>
-            </>
-          )}
-        </div>
+        {mode === 'monthly' && (
+          <div className={styles.navigation}>
+            <button onClick={() => onNavigate(-1)} className={styles.navBtn} title="Mes anterior">◀</button>
+            <button onClick={onReset} className={styles.navBtn} title="Hoy">Hoy</button>
+            <button onClick={() => onNavigate(1)} className={styles.navBtn} title="Siguiente mes">▶</button>
+          </div>
+        )}
       </div>
     </header>
   );
