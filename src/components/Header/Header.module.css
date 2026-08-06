@@ -23,10 +23,8 @@
   flex-wrap: wrap;
 }
 
-.titleWithVoice {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.voiceBtn {
+  margin-left: auto;
 }
 
 .controls {
