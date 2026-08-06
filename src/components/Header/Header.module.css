@@ -23,6 +23,12 @@
   flex-wrap: wrap;
 }
 
+.titleWithVoice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .controls {
   display: flex;
   flex-direction: column;

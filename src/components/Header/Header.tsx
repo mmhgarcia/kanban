@@ -100,7 +100,16 @@ export const Header: React.FC<HeaderProps> = ({
     <header className={styles.header}>
       <div className={styles.titleSection}>
         <div className={styles.left}>
-          <h1 className={styles.title}>Kanban Board</h1>
+          <div className={styles.titleWithVoice}>
+            <h1 className={styles.title}>Kanban Board</h1>
+            <button
+              onClick={handleVoiceButtonClick}
+              className={`${styles.voiceBtn} ${isListening ? styles.listening : ''}`}
+              title="Comando de voz (Ej: 'Cerrar 1')"
+            >
+              {isListening ? '🎙️' : '🎤'}
+            </button>
+          </div>
           <div className={styles.modeSwitcher}>
             <button
               className={`${styles.modeBtn} ${mode === 'monthly' ? styles.active : ''}`}
@@ -120,13 +129,6 @@ export const Header: React.FC<HeaderProps> = ({
 
       <div className={styles.controls}>
         <div className={styles.controlRow}>
-          <button
-            onClick={handleVoiceButtonClick}
-            className={`${styles.voiceBtn} ${isListening ? styles.listening : ''}`}
-            title="Comando de voz (Ej: 'Cerrar 1')"
-          >
-            {isListening ? '🎙️' : '🎤'}
-          </button>
 
           {mode === 'status' && (
             <div className={styles.projectSelector}>
