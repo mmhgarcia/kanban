@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import styles from './Board.module.css';
 import { useBoard } from '../../hooks/useBoard';
 import { Header } from '../Header/Header';
@@ -6,8 +6,10 @@ import { Column } from '../Column/Column';
 import { MonthlyCardEditor } from '../CardEditor/MonthlyCardEditor';
 import { ProjectCardEditor } from '../CardEditor/ProjectCardEditor';
 import { VoiceHelpModal } from '../VoiceHelpModal/VoiceHelpModal';
+import { AlarmModal } from '../AlarmModal/AlarmModal';
 import type { Card } from '../../models/Card';
 import { getColumnId } from '../../utils/dates';
+import { startAlertSequence, stopAlertSequence } from '../../utils/audioService';
 
 export const Board: React.FC = () => {
   const {
@@ -89,6 +91,107 @@ export const Board: React.FC = () => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const [draggedCard, setDraggedCard] = useState<{ id: string; columnId: string } | null>(null);
+
+  // Alarm state: stores the card triggering the alarm and which column it belongs to
+  const [activeAlarm, setActiveAlarm] = useState<{ card: Card; columnId: string } | null>(null);
+  const alarmPlayingRef = useRef(false);
+
+  // ─── Alarm Engine ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const checkAlarms = () => {
+      const now = new Date();
+      const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const todayStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+
+      // Collect ALL cards across all columns and modes
+      const allCards: { card: Card; columnId: string }[] = [];
+      const allColumns = [
+        ...columns,
+      ];
+      allColumns.forEach(col => {
+        col.cards.forEach(card => {
+          allCards.push({ card, columnId: col.id });
+        });
+      });
+
+      for (const { card, columnId } of allCards) {
+        if (
+          card.alarmActive &&
+          card.alarmTime === hhmm &&
+          card.status !== 'closed'
+        ) {
+          // Respect snooze: if snoozedUntil is in the future, skip
+          if (card.snoozedUntil && new Date(card.snoozedUntil) > now) {
+            continue;
+          }
+
+          // Avoid re-triggering within the same minute
+          const triggerKey = `${todayStr}T${hhmm}`;
+          if (card.lastTriggeredTime === triggerKey) {
+            continue;
+          }
+
+          // Mark card as triggered for this minute
+          updateCard(columnId, { ...card, lastTriggeredTime: triggerKey });
+
+          // Show the alarm modal and start audio
+          setActiveAlarm({ card, columnId });
+          if (!alarmPlayingRef.current) {
+            alarmPlayingRef.current = true;
+            startAlertSequence(card.title, card.description)
+              .finally(() => { alarmPlayingRef.current = false; });
+          }
+
+          // Schedule native Android notification via Cordova if available
+          const cordova = (window as any).cordova;
+          if (cordova && (cordova.plugins?.notification?.local || (window as any).cordova?.plugins?.notification)) {
+            try {
+              const notifPlugin = cordova.plugins.notification.local;
+              notifPlugin.schedule({
+                id: Math.abs(card.displayId ?? Math.floor(Math.random() * 9999)),
+                title: '💊 Alerta de Tratamiento',
+                text: card.title,
+                foreground: true,
+                vibrate: true,
+                sound: 'file://assets/alarm.wav', // uses wav file if present in www/assets/
+              });
+            } catch (e) {
+              console.warn('Cordova notification plugin not available:', e);
+            }
+          }
+
+          // Only fire one alarm at a time
+          break;
+        }
+      }
+    };
+
+    // Check immediately when component mounts
+    checkAlarms();
+
+    // Then check every 30 seconds
+    const intervalId = setInterval(checkAlarms, 30_000);
+    return () => clearInterval(intervalId);
+  }, [columns, updateCard]);
+
+  const handleAlarmSnooze = (minutes: number) => {
+    if (!activeAlarm) return;
+    stopAlertSequence();
+    const snoozedUntil = new Date(Date.now() + minutes * 60_000).toISOString();
+    updateCard(activeAlarm.columnId, {
+      ...activeAlarm.card,
+      snoozedUntil,
+    });
+    setActiveAlarm(null);
+  };
+
+  const handleAlarmDiscard = () => {
+    if (!activeAlarm) return;
+    stopAlertSequence();
+    // Turn off the alarm permanently for today (alarmActive remains true for next days)
+    // We just ensure lastTriggeredTime blocks re-firing this minute
+    setActiveAlarm(null);
+  };
 
   const handleDragStart = (cardId: string, columnId: string) => {
     setDraggedCard({ id: cardId, columnId });
@@ -425,6 +528,14 @@ export const Board: React.FC = () => {
 
       {isHelpOpen && (
         <VoiceHelpModal onClose={() => setIsHelpOpen(false)} />
+      )}
+
+      {activeAlarm && (
+        <AlarmModal
+          card={activeAlarm.card}
+          onSnooze={handleAlarmSnooze}
+          onDiscard={handleAlarmDiscard}
+        />
       )}
     </div>
   );

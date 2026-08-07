@@ -13,4 +13,8 @@ export interface Card {
   updated: string; // ISO date string
   scheduledDate?: string; // YYYY-MM-DD
   images?: string[]; // Array of Base64 strings
+  alarmTime?: string; // HH:MM
+  alarmActive?: boolean;
+  snoozedUntil?: string; // ISO string
+  lastTriggeredTime?: string; // YYYY-MM-DDTHH:MM
 }

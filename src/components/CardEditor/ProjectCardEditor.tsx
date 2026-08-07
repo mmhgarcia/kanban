@@ -15,6 +15,8 @@ export const ProjectCardEditor: React.FC<ProjectCardEditorProps> = ({ initialCar
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<CardPriority>('medium');
   const [scheduledDate, setScheduledDate] = useState('');
+  const [alarmTime, setAlarmTime] = useState('');
+  const [alarmActive, setAlarmActive] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [isCompressing, setIsCompressing] = useState(false);
 
@@ -33,6 +35,11 @@ export const ProjectCardEditor: React.FC<ProjectCardEditorProps> = ({ initialCar
       if (initialCard.scheduledDate) {
         setScheduledDate(initialCard.scheduledDate);
       }
+
+      if (initialCard.alarmTime) {
+        setAlarmTime(initialCard.alarmTime);
+      }
+      setAlarmActive(!!initialCard.alarmActive);
     }
   }, [initialCard]);
 
@@ -66,6 +73,7 @@ export const ProjectCardEditor: React.FC<ProjectCardEditorProps> = ({ initialCar
     if (!title.trim()) return;
 
     const now = new Date().toISOString();
+    const alarmChanged = initialCard?.alarmTime !== alarmTime;
     const card: Card = {
       id: initialCard?.id || generateId(),
       displayId: initialCard?.displayId,
@@ -77,6 +85,10 @@ export const ProjectCardEditor: React.FC<ProjectCardEditorProps> = ({ initialCar
       images,
       created: initialCard?.created || now,
       updated: now,
+      alarmTime: alarmTime || undefined,
+      alarmActive: alarmTime ? alarmActive : false,
+      snoozedUntil: alarmChanged ? undefined : initialCard?.snoozedUntil,
+      lastTriggeredTime: alarmChanged ? undefined : initialCard?.lastTriggeredTime,
     };
 
     onSave(card);
@@ -125,6 +137,34 @@ export const ProjectCardEditor: React.FC<ProjectCardEditorProps> = ({ initialCar
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
             />
+          </div>
+
+          <div className={styles.alarmGroupRow}>
+            <div className={styles.formGroup} style={{ flex: 1 }}>
+              <label htmlFor="alarmTime">⏰ Hora de Alerta (Tratamiento)</label>
+              <input
+                id="alarmTime"
+                type="time"
+                value={alarmTime}
+                onChange={(e) => {
+                  setAlarmTime(e.target.value);
+                  if (e.target.value && !alarmActive) {
+                    setAlarmActive(true);
+                  }
+                }}
+              />
+            </div>
+            {alarmTime && (
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={alarmActive}
+                  onChange={(e) => setAlarmActive(e.target.checked)}
+                  className={styles.checkboxInput}
+                />
+                Activa
+              </label>
+            )}
           </div>
 
           <div className={styles.formGroup}>
