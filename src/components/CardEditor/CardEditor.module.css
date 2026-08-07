@@ -62,6 +62,34 @@
   flex: 1;
 }
 
+.removeThumbBtn:hover {
+  background-color: #e94560;
+}
+
+.alarmGroupRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a0a0a0;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 24px;
+  user-select: none;
+}
+
+.checkboxInput {
+  width: 20px;
+  height: 20px;
+  accent-color: #e94560;
+  cursor: pointer;
+}
+
 /* Scrollbar para el formulario */
 .form::-webkit-scrollbar {
   width: 5px;
@@ -204,6 +232,4 @@
   line-height: 1;
 }
 
-.removeThumbBtn:hover {
-  background-color: #e94560;
-}
+
