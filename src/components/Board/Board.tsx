@@ -7,6 +7,7 @@ import { MonthlyCardEditor } from '../CardEditor/MonthlyCardEditor';
 import { ProjectCardEditor } from '../CardEditor/ProjectCardEditor';
 import { VoiceHelpModal } from '../VoiceHelpModal/VoiceHelpModal';
 import { AlarmModal } from '../AlarmModal/AlarmModal';
+import { ConfirmModal } from '../ConfirmModal/ConfirmModal';
 import type { Card } from '../../models/Card';
 import { getColumnId } from '../../utils/dates';
 import { startAlertSequence, stopAlertSequence } from '../../utils/audioService';
@@ -89,6 +90,12 @@ export const Board: React.FC = () => {
   }>({ isOpen: false, columnId: null, cardToEdit: null });
 
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  const [cardToDelete, setCardToDelete] = useState<{
+    columnId: string;
+    cardId: string;
+    label: string;
+  } | null>(null);
 
   const [draggedCard, setDraggedCard] = useState<{ id: string; columnId: string } | null>(null);
 
@@ -358,9 +365,11 @@ export const Board: React.FC = () => {
 
         switch (intent) {
           case 'DELETE':
-            if (window.confirm(`⚠️ ELIMINACIÓN SEMÁNTICA\n\n¿Deseas borrar la tarjeta #${id}?\n"${card.title}"`)) {
-              removeCard(col.id, card.id);
-            }
+            setCardToDelete({
+              columnId: col.id,
+              cardId: card.id,
+              label: `#${card.displayId} · ${card.title}`,
+            });
             break;
 
           case 'EDIT':
@@ -455,9 +464,12 @@ export const Board: React.FC = () => {
             onAddCard={() => handleOpenEditor(col.id)}
             onEditCard={(card) => handleOpenEditor(col.id, card)}
             onDeleteCard={(cardId) => {
-              if (confirm('¿Estás seguro de que deseas eliminar esta tarjeta?')) {
-                removeCard(col.id, cardId);
-              }
+              const card = col.cards.find(c => c.id === cardId);
+              setCardToDelete({
+                columnId: col.id,
+                cardId,
+                label: card ? `#${card.displayId} · ${card.title}` : '',
+              });
             }}
             onToggleCardStatus={(cardId) => toggleCardStatus(col.id, cardId)}
             onDuplicateCard={(cardId) => duplicateCard(col.id, cardId)}
@@ -528,6 +540,19 @@ export const Board: React.FC = () => {
 
       {isHelpOpen && (
         <VoiceHelpModal onClose={() => setIsHelpOpen(false)} />
+      )}
+
+      {cardToDelete && (
+        <ConfirmModal
+          title="Eliminar tarjeta"
+          message="Esta acción no se puede deshacer. ¿Deseas eliminar esta tarjeta?"
+          detail={cardToDelete.label}
+          onConfirm={() => {
+            removeCard(cardToDelete.columnId, cardToDelete.cardId);
+            setCardToDelete(null);
+          }}
+          onCancel={() => setCardToDelete(null)}
+        />
       )}
 
       {activeAlarm && (
