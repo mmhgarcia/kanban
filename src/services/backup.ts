@@ -152,7 +152,7 @@ async function requestStoragePermissions(): Promise<boolean> {
 
 /**
  * Creates file using cordova-plugin-file and opens Android Sharesheet
- * Uses ACTION_CREATE_DOCUMENT to let user choose save destination
+ * Uses ACTION_SEND with chooser for sharing functionality
  */
 function cordovaExportWithSharesheet(jsonData: string, fileName: string): Promise<{ filePath: string; destination: string }> {
   const cordova = (window as any).cordova;
@@ -170,180 +170,117 @@ function cordovaExportWithSharesheet(jsonData: string, fileName: string): Promis
           return;
         }
 
-        // Use cordova-plugin-intent to launch file picker with ACTION_CREATE_DOCUMENT
-        if (cordova.plugins && cordova.plugins.intentShim) {
-          try {
-            const intentShim = cordova.plugins.intentShim;
-            
-            // Create ACTION_CREATE_DOCUMENT intent to let user choose save location
-            const intent = {
-              action: 'android.intent.action.CREATE_DOCUMENT',
-              type: 'application/json',
-              extras: {
-                'android.intent.extra.TITLE': fileName,
-                'android.intent.extra.MIME_TYPES': ['application/json']
-              }
-            };
-            
-            console.log('[Backup] Launching ACTION_CREATE_DOCUMENT intent');
-            
-            // Launch intent to select file destination
-            intentShim.startActivity(
-              intent,
-              (result: any) => {
-                console.log('[Backup] Intent result:', result);
-                // User selected a destination, now write the file
-                if (result && result.data) {
-                  const destinationUri = result.data;
-                  console.log('[Backup] Destination URI selected:', destinationUri);
+        // First create the file in a temporary location
+        const onFileSystemSuccess = (fileSystem: any) => {
+          const directoryEntry = fileSystem.root;
+          
+          directoryEntry.getFile(
+            fileName,
+            { create: true, exclusive: false },
+            (fileEntry: any) => {
+              fileEntry.createWriter((writer: any) => {
+                writer.onwriteend = () => {
+                  const filePath = fileEntry.toURL();
+                  console.log('[Backup] File created at:', filePath);
                   
-                  // Write data to selected destination
-                  cordovaExportWithSharesheetWriteFile(jsonData, destinationUri)
-                    .then(({ filePath, destination }) => {
-                      console.log('[Backup] File written successfully to:', destination);
-                      resolve({ filePath, destination });
-                    })
-                    .catch((error: any) => {
-                      console.error('[Backup] Failed to write file to selected destination:', error);
-                      // Fallback to default location
-                      cordovaExportFallback(jsonData, fileName, cordova, filePlugin)
+                  // Now try to share it using ACTION_SEND with chooser
+                  if (cordova.plugins && cordova.plugins.intentShim) {
+                    try {
+                      const intentShim = cordova.plugins.intentShim;
+                      
+                      // Create ACTION_SEND intent for sharing
+                      const intent = {
+                        action: 'android.intent.action.SEND',
+                        type: 'application/json',
+                        extras: {
+                          'android.intent.extra.STREAM': filePath,
+                          'android.intent.extra.SUBJECT': 'Backup Kanban Board',
+                          'android.intent.extra.TEXT': `Backup del tablero Kanban: ${fileName}`
+                        }
+                      };
+                      
+                      console.log('[Backup] Launching ACTION_SEND intent with chooser');
+                      
+                      // Create chooser for Sharesheet
+                      const chooserIntent = intentShim.createChooser(intent, 'Guardar o compartir backup');
+                      
+                      // Launch Sharesheet
+                      intentShim.startActivity(chooserIntent, 
+                        () => {
+                          console.log('[Backup] Sharesheet launched successfully');
+                          resolve({ filePath, destination: 'Sharesheet launched' });
+                        },
+                        (error: any) => {
+                          console.error('[Backup] Intent launch failed:', error);
+                          // Fallback to file-opener2
+                          cordovaExportFallbackOpenFile(filePath, cordova)
+                            .then(resolve)
+                            .catch(() => resolve({ filePath, destination: 'File created (no opener)' }));
+                        }
+                      );
+                    } catch (intentError) {
+                      console.error('[Backup] Intent setup failed:', intentError);
+                      // Fallback to file-opener2
+                      cordovaExportFallbackOpenFile(filePath, cordova)
                         .then(resolve)
-                        .catch(reject);
-                    });
-                } else {
-                  console.warn('[Backup] No destination URI returned, using fallback');
-                  // User cancelled or no URI returned, use fallback
-                  cordovaExportFallback(jsonData, fileName, cordova, filePlugin)
-                    .then(resolve)
-                    .catch(reject);
-                }
-              },
-              (error: any) => {
-                console.error('[Backup] Intent launch failed:', error);
-                // Fallback to default behavior
-                cordovaExportFallback(jsonData, fileName, cordova, filePlugin)
-                  .then(resolve)
-                  .catch(reject);
-              }
-            );
-          } catch (intentError) {
-            console.error('[Backup] Intent setup failed:', intentError);
-            // Fallback to default behavior
-            cordovaExportFallback(jsonData, fileName, cordova, filePlugin)
-              .then(resolve)
-              .catch(reject);
-          }
-        } else {
-          console.warn('[Backup] cordova-plugin-intent not available, using fallback');
-          // Fallback: intentShim not available
-          cordovaExportFallback(jsonData, fileName, cordova, filePlugin)
-            .then(resolve)
-            .catch(reject);
-        }
+                        .catch(() => resolve({ filePath, destination: 'File created (no opener)' }));
+                    }
+                  } else {
+                    console.warn('[Backup] cordova-plugin-intent not available');
+                    // Fallback to file-opener2
+                    cordovaExportFallbackOpenFile(filePath, cordova)
+                      .then(resolve)
+                      .catch(() => resolve({ filePath, destination: 'File created (no opener)' }));
+                  }
+                };
+                writer.onerror = reject;
+                
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                writer.write(blob);
+              }, reject);
+            },
+            reject
+          );
+        };
+
+        const onError = (error: any) => reject(error);
+
+        filePlugin.requestFileSystem(
+          filePlugin.PERSISTENT,
+          0,
+          onFileSystemSuccess,
+          onError
+        );
       })
       .catch(reject);
   });
 }
 
 /**
- * Fallback method when ACTION_CREATE_DOCUMENT fails or is not available
- * Creates file in default location and tries to open it
+ * Fallback method to open file with file-opener2
  */
-function cordovaExportFallback(jsonData: string, fileName: string, cordova: any, filePlugin: any): Promise<{ filePath: string; destination: string }> {
+function cordovaExportFallbackOpenFile(filePath: string, cordova: any): Promise<{ filePath: string; destination: string }> {
   return new Promise((resolve, reject) => {
-    console.log('[Backup] Using fallback method for file creation');
+    console.log('[Backup] Using file-opener2 fallback for:', filePath);
     
-    const onFileSystemSuccess = (fileSystem: any) => {
-      const directoryEntry = fileSystem.root;
-      
-      directoryEntry.getFile(
-        fileName,
-        { create: true, exclusive: false },
-        (fileEntry: any) => {
-          fileEntry.createWriter((writer: any) => {
-            writer.onwriteend = () => {
-              const filePath = fileEntry.toURL();
-              console.log('[Backup] File created at default location:', filePath);
-              
-              // Try to open with file-opener2
-              if (cordova.plugins.fileOpener2) {
-                cordova.plugins.fileOpener2.open(
-                  filePath,
-                  'application/json',
-                  {
-                    success: () => {
-                      console.log('[Backup] File opened with file-opener2');
-                      resolve({ filePath, destination: 'File opened with file-opener2' });
-                    },
-                    error: (error: any) => {
-                      console.warn('[Backup] File opener failed:', error);
-                      resolve({ filePath, destination: 'File created (no opener)' });
-                    }
-                  }
-                );
-              } else {
-                console.warn('[Backup] file-opener2 not available');
-                resolve({ filePath, destination: 'File created (no opener)' });
-              }
-            };
-            writer.onerror = reject;
-            
-            const blob = new Blob([jsonData], { type: 'application/json' });
-            writer.write(blob);
-          }, reject);
-        },
-        reject
-      );
-    };
-
-    const onError = (error: any) => reject(error);
-
-    filePlugin.requestFileSystem(
-      filePlugin.PERSISTENT,
-      0,
-      onFileSystemSuccess,
-      onError
-    );
-  });
-}
-
-/**
- * Writes JSON data to a specific URI returned by ACTION_CREATE_DOCUMENT
- */
-function cordovaExportWithSharesheetWriteFile(jsonData: string, uri: string): Promise<{ filePath: string; destination: string }> {
-  return new Promise((resolve, reject) => {
-    try {
-      // Use cordova-plugin-file to write to the content URI
-      (window as any).resolveLocalFileSystemURL(
-        uri,
-        (fileEntry: any) => {
-          console.log('[Backup] Resolved file entry from URI:', fileEntry);
-          
-          fileEntry.createWriter((writer: any) => {
-            writer.onwriteend = () => {
-              console.log('[Backup] Data written to selected destination successfully');
-              resolve({ 
-                filePath: uri, 
-                destination: 'User selected location' 
-              });
-            };
-            writer.onerror = (error: any) => {
-              console.error('[Backup] Writer error:', error);
-              reject(error);
-            };
-            
-            const blob = new Blob([jsonData], { type: 'application/json' });
-            writer.write(blob);
-          }, reject);
-        },
-        (error: any) => {
-          console.error('[Backup] Failed to resolve URI:', error);
-          reject(error);
+    if (cordova.plugins.fileOpener2) {
+      cordova.plugins.fileOpener2.open(
+        filePath,
+        'application/json',
+        {
+          success: () => {
+            console.log('[Backup] File opened with file-opener2');
+            resolve({ filePath, destination: 'File opened with file-opener2' });
+          },
+          error: (error: any) => {
+            console.warn('[Backup] File opener failed:', error);
+            reject(error);
+          }
         }
       );
-    } catch (error) {
-      console.error('[Backup] Exception in writeFile:', error);
-      reject(error);
+    } else {
+      console.warn('[Backup] file-opener2 not available');
+      reject(new Error('file-opener2 not available'));
     }
   });
 }
