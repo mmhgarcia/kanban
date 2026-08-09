@@ -31,8 +31,13 @@ Recientemente agregados botones Backup/Restore en header (solo presentación vis
 - Cordova para mobile
 
 ## PENDIENTES/TODO
-- Implementar lógica funcional para botones Backup/Restore (actualmente solo presentación)
-- Los cambios remotos agregaron BackupBar component - verificar integración
+- Implementar funcionalidad Restore (actualmente Backup funcional, Restore pendiente)
+- Verificar integración con BackupBar component de cambios remotos
+
+## PREFERENCIAS DE TRABAJO
+- Ejecutar solicitudes sin confirmaciones frecuentes (modo autónomo)
+- SOLO pedir confirmación para operaciones de eliminación (archivos, datos, etc.)
+- Preferir flujo de trabajo directo sin interrupciones innecesarias
 
 ## ESTILOS
 - Tema oscuro: #1a1a2e background, #e94560 acentos
