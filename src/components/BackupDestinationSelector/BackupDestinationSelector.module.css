@@ -1,0 +1,245 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: linear-gradient(145deg, #1a1a2e, #16213e);
+  border: 1px solid rgba(233, 69, 96, 0.4);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  padding: 32px 24px;
+  box-shadow: 0 0 40px rgba(233, 69, 96, 0.25), 0 10px 40px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #e94560;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
+
+.destinationsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.destinationCard {
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.destinationCard:hover {
+  background-color: rgba(233, 69, 96, 0.1);
+  border-color: rgba(233, 69, 96, 0.4);
+  transform: translateY(-2px);
+}
+
+.destinationCard:active {
+  transform: translateY(0);
+}
+
+.destinationIcon {
+  font-size: 40px;
+}
+
+.destinationName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+}
+
+.backupConfig {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.selectedDestination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: rgba(233, 69, 96, 0.1);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.selectedIcon {
+  font-size: 28px;
+}
+
+.selectedName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e94560;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputGroup label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #a0a0a0;
+}
+
+.input {
+  background-color: #16213e;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #ffffff;
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: #e94560;
+}
+
+.input::placeholder {
+  color: #6a6a8a;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.backBtn,
+.confirmBtn {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.backBtn {
+  background-color: #2a2a4a;
+  color: #c0c0e0;
+  border: 1px solid #3a3a5a;
+}
+
+.backBtn:hover:not(:disabled) {
+  background-color: #3a3a6a;
+  color: #ffffff;
+}
+
+.confirmBtn {
+  background-color: #e94560;
+  color: #ffffff;
+  border: none;
+}
+
+.confirmBtn:hover:not(:disabled) {
+  background-color: #ff5c77;
+  transform: translateY(-1px);
+}
+
+.backBtn:disabled,
+.confirmBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background-color: transparent;
+  border: none;
+  color: #6a6a8a;
+  font-size: 20px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover:not(:disabled) {
+  background-color: rgba(233, 69, 96, 0.1);
+  color: #e94560;
+}
+
+.closeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .modal {
+    padding: 24px 16px;
+    max-width: 95%;
+  }
+
+  .destinationsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .destinationCard {
+    flex-direction: row;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .destinationIcon {
+    font-size: 32px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+}

@@ -13,6 +13,8 @@ interface HeaderProps {
   onAddProject: (name: string) => void;
   onRemoveProject: (id: string) => void;
   onVoiceCommand: (text: string) => void;
+  onBackupClick: () => void;
+  onRestoreClick: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,7 +27,9 @@ export const Header: React.FC<HeaderProps> = ({
   onProjectChange,
   onAddProject,
   onRemoveProject,
-  onVoiceCommand
+  onVoiceCommand,
+  onBackupClick,
+  onRestoreClick
 }) => {
   const [isListening, setIsListening] = React.useState(false);
 
@@ -102,8 +106,20 @@ export const Header: React.FC<HeaderProps> = ({
         <div className={styles.titleRow}>
           <h1 className={styles.title}>Kanban Board</h1>
           <div className={styles.headerActions}>
-            <button className={styles.backupBtn} title="Backup">Backup</button>
-            <button className={styles.restoreBtn} title="Restore">Restore</button>
+            <button 
+              onClick={onBackupClick} 
+              className={styles.backupBtn} 
+              title="Backup"
+            >
+              Backup
+            </button>
+            <button 
+              onClick={onRestoreClick} 
+              className={styles.restoreBtn} 
+              title="Restore"
+            >
+              Restore
+            </button>
             <button
               onClick={handleVoiceButtonClick}
               className={`${styles.voiceBtn} ${isListening ? styles.listening : ''}`}
