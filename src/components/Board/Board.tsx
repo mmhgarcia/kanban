@@ -7,11 +7,10 @@ import { MonthlyCardEditor } from '../CardEditor/MonthlyCardEditor';
 import { ProjectCardEditor } from '../CardEditor/ProjectCardEditor';
 import { VoiceHelpModal } from '../VoiceHelpModal/VoiceHelpModal';
 import { AlarmModal } from '../AlarmModal/AlarmModal';
-import { BackupDestinationSelector } from '../BackupDestinationSelector/BackupDestinationSelector';
 import type { Card } from '../../models/Card';
 import { getColumnId } from '../../utils/dates';
 import { startAlertSequence, stopAlertSequence } from '../../utils/audioService';
-import { performBackup } from '../../services/backupService';
+import { exportBackup } from '../../services/backup';
 
 export const Board: React.FC = () => {
   const {
@@ -97,9 +96,6 @@ export const Board: React.FC = () => {
   // Alarm state: stores the card triggering the alarm and which column it belongs to
   const [activeAlarm, setActiveAlarm] = useState<{ card: Card; columnId: string } | null>(null);
   const alarmPlayingRef = useRef(false);
-
-  // Backup state
-  const [isBackupSelectorOpen, setIsBackupSelectorOpen] = useState(false);
 
   // ─── Alarm Engine ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -436,22 +432,19 @@ export const Board: React.FC = () => {
     alert(`No encontré la tarjeta #${id} en las columnas visibles.`);
   };
 
-  const handleBackupClick = () => {
-    setIsBackupSelectorOpen(true);
+  const handleBackupClick = async () => {
+    try {
+      const entry = await exportBackup();
+      alert(`Backup completado: ${entry.fileName}`);
+    } catch (error) {
+      console.error('Backup error:', error);
+      if ((error as DOMException)?.name === 'AbortError') return;
+      alert('Error al realizar el backup');
+    }
   };
 
   const handleRestoreClick = () => {
     alert('Funcionalidad de Restore próximamente disponible');
-  };
-
-  const handleBackup = async (destination: 'drive' | 'whatsapp' | 'local' | 'other', backupName: string) => {
-    try {
-      await performBackup(destination, backupName);
-      alert('Backup completado exitosamente');
-    } catch (error) {
-      console.error('Backup error:', error);
-      alert('Error al realizar el backup');
-    }
   };
 
   return (
@@ -563,12 +556,6 @@ export const Board: React.FC = () => {
         />
       )}
 
-      {isBackupSelectorOpen && (
-        <BackupDestinationSelector
-          onClose={() => setIsBackupSelectorOpen(false)}
-          onBackup={handleBackup}
-        />
-      )}
     </div>
   );
 };
