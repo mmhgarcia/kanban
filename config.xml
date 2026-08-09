@@ -1,0 +1,72 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.kanban.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>Kanban Board</name>
+    <description>
+        A Kanban board application with monthly and status modes, voice commands, and backup functionality.
+    </description>
+    <author email="dev@example.com" href="https://example.com">
+        Kanban Team
+    </author>
+    <content src="index.html" />
+    
+    <preference name="Orientation" value="portrait" />
+    <preference name="BackgroundColor" value="#1a1a2e" />
+    <preference name="Fullscreen" value="false" />
+    <preference name="KeepRunning" value="true" />
+    
+    <!-- Plugins -->
+    <plugin name="cordova-plugin-file" spec="^8.0.0" />
+    <plugin name="cordova-plugin-android-permissions" spec="^1.1.0" />
+    <plugin name="com-darryncampbell-cordova-plugin-intent" spec="^2.2.0" />
+    <plugin name="cordova-plugin-file-opener2" spec="^4.0.0" />
+    
+    <!-- Android specific configuration -->
+    <platform name="android">
+        <preference name="AndroidXEnabled" value="true" />
+        <preference name="AndroidPersistentFileLocation" value="Internal" />
+        
+        <!-- FileProvider configuration for sharing files -->
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <application>
+                <provider
+                    android:name="androidx.core.content.FileProvider"
+                    android:authorities="${applicationId}.fileprovider"
+                    android:exported="false"
+                    android:grantUriPermissions="true">
+                    <meta-data
+                        android:name="android.support.FILE_PROVIDER_PATHS"
+                        android:resource="@xml/file_paths" />
+                </provider>
+            </application>
+        </config-file>
+        
+        <!-- File paths configuration for FileProvider -->
+        <config-file target="res/xml/file_paths.xml" parent="/*">
+            <paths>
+                <external-path name="external_files" path="." />
+                <external-files-path name="external_files_path" path="." />
+                <cache-path name="cache" path="." />
+                <files-path name="files" path="." />
+            </paths>
+        </config-file>
+        
+        <!-- Permissions -->
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+            <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+            <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+            <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+            <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+            <uses-permission android:name="android.permission.INTERNET" />
+        </config-file>
+    </platform>
+    
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="sms:*" />
+    <allow-intent href="mailto:*" />
+    <allow-intent href="geo:*" />
+</widget>
