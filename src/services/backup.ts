@@ -87,10 +87,10 @@ function boardToCSV(board: Board): string {
         card.id,
         `"${card.title.replace(/"/g, '""')}"`,
         `"${card.description?.replace(/"/g, '""') || ''}"`,
-        col.title,
+        col.title || '',
         'Monthly',
-        card.createdAt,
-        card.updatedAt
+        card.created,
+        card.updated
       ]);
     });
   });
@@ -103,10 +103,10 @@ function boardToCSV(board: Board): string {
           card.id,
           `"${card.title.replace(/"/g, '""')}"`,
           `"${card.description?.replace(/"/g, '""') || ''}"`,
-          col.title,
+          col.title || '',
           project.name,
-          card.createdAt,
-          card.updatedAt
+          card.created,
+          card.updated
         ]);
       });
     });
