@@ -209,28 +209,96 @@ function cordovaExportWithSharesheet(csvData: string, fileName: string): Promise
             (fileEntry: any) => {
               fileEntry.createWriter((writer: any) => {
                 writer.onwriteend = () => {
-                  // File created successfully, now open with Sharesheet
+                  // File created successfully, now open with Android Sharesheet
                   const filePath = fileEntry.toURL();
                   
-                  // Use cordova-plugin-file-opener2 to open the file
-                  if (cordova.plugins.fileOpener2) {
-                    cordova.plugins.fileOpener2.open(
-                      filePath,
-                      'text/csv',
-                      {
-                        success: () => {
+                  // Use cordova-plugin-intent (intentShim) to launch Android Sharesheet
+                  if (cordova.plugins && cordova.plugins.intentShim) {
+                    try {
+                      const intentShim = cordova.plugins.intentShim;
+                      
+                      // Create ACTION_SEND intent for sharing with file
+                      const intent = {
+                        action: 'android.intent.action.SEND',
+                        type: 'text/csv',
+                        extras: {
+                          'android.intent.extra.STREAM': filePath,
+                          'android.intent.extra.SUBJECT': 'Backup Kanban Board',
+                          'android.intent.extra.TEXT': `Backup del tablero Kanban: ${fileName}`
+                        }
+                      };
+                      
+                      // Create chooser for Sharesheet
+                      const chooserIntent = intentShim.createChooser(intent, 'Compartir backup');
+                      
+                      // Launch Sharesheet
+                      intentShim.startActivity(chooserIntent, 
+                        () => {
                           resolve({ filePath, destination: 'Sharesheet launched' });
                         },
-                        error: (error: any) => {
-                          // If opener fails, still return success with file path
-                          console.warn('File opener failed, file was created:', error);
-                          resolve({ filePath, destination: 'Sharesheet launched (file created)' });
+                        (error: any) => {
+                          console.warn('Intent launch failed, falling back to file-opener2:', error);
+                          // Fallback to file-opener2 if intent fails
+                          if (cordova.plugins.fileOpener2) {
+                            cordova.plugins.fileOpener2.open(
+                              filePath,
+                              'text/csv',
+                              {
+                                success: () => {
+                                  resolve({ filePath, destination: 'File opened with file-opener2' });
+                                },
+                                error: (error: any) => {
+                                  console.warn('File opener failed, file was created:', error);
+                                  resolve({ filePath, destination: 'File created (no opener)' });
+                                }
+                              }
+                            );
+                          } else {
+                            resolve({ filePath, destination: 'File created (no opener)' });
+                          }
                         }
+                      );
+                    } catch (intentError) {
+                      console.warn('Intent setup failed, falling back to file-opener2:', intentError);
+                      // Fallback to file-opener2 if intent setup fails
+                      if (cordova.plugins.fileOpener2) {
+                        cordova.plugins.fileOpener2.open(
+                          filePath,
+                          'text/csv',
+                          {
+                            success: () => {
+                              resolve({ filePath, destination: 'File opened with file-opener2' });
+                            },
+                            error: (error: any) => {
+                              console.warn('File opener failed, file was created:', error);
+                              resolve({ filePath, destination: 'File created (no opener)' });
+                            }
+                          }
+                        );
+                      } else {
+                        resolve({ filePath, destination: 'File created (no opener)' });
                       }
-                    );
+                    }
                   } else {
-                    // Fallback: file was created, log the path
-                    resolve({ filePath, destination: 'Sharesheet launched (file created)' });
+                    // Fallback: file was created, but intentShim not available
+                    console.warn('cordova-plugin-intent not available');
+                    if (cordova.plugins.fileOpener2) {
+                      cordova.plugins.fileOpener2.open(
+                        filePath,
+                        'text/csv',
+                        {
+                          success: () => {
+                            resolve({ filePath, destination: 'File opened with file-opener2' });
+                          },
+                          error: (error: any) => {
+                            console.warn('File opener failed, file was created:', error);
+                            resolve({ filePath, destination: 'File created (no opener)' });
+                          }
+                        }
+                      );
+                    } else {
+                      resolve({ filePath, destination: 'File created (no opener)' });
+                    }
                   }
                 };
                 writer.onerror = reject;

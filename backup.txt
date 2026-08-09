@@ -10,7 +10,12 @@ Requisitos para el botón Export:
 
 2. El archivo es un .csv/texto (puede ser generado en memoria) con nombre dinámico: export_YYYY-MM-DD_HHmmss.csv
 
-3. USAR CORDOVA: Debe usarse el plugin cordova-plugin-file para generar el archivo y cordova-plugin-file-opener2 o window.intent para lanzar el Sharesheet.
+3. USAR CORDOVA: Debe usarse el plugin cordova-plugin-file para generar el archivo y cordova-plugin-intent (intentShim) para lanzar el Sharesheet nativo de Android.
+
+Plugins requeridos:
+- cordova-plugin-file
+- cordova-plugin-intent (com-darryncampbell-cordova-plugin-intent)
+- cordova-plugin-android-permissions
 
 4. LOG: Cada vez que se ejecute la exportación, registrar en console.log (y opcionalmente en un archivo de logs dentro de la app) los siguientes campos:
    - Fecha (YYYY-MM-DD)
