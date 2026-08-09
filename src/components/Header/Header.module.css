@@ -26,6 +26,32 @@
   margin-left: 0;
 }
 
+.headerActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.backupBtn,
+.restoreBtn {
+  background-color: #16213e;
+  color: #fff;
+  border: 1px solid #2a2a4a;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.backupBtn:hover,
+.restoreBtn:hover {
+  background-color: #e94560;
+  border-color: #e94560;
+  transform: translateY(-1px);
+}
+
 .controls {
   display: flex;
   flex-direction: column;
@@ -92,6 +118,24 @@
   .navBtn {
     flex: 1 1 auto;
     min-width: 64px;
+  }
+
+  .headerActions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .backupBtn,
+  .restoreBtn {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-width: 60px;
+  }
+
+  .voiceBtn {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
   }
 }
 

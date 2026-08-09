@@ -101,13 +101,17 @@ export const Header: React.FC<HeaderProps> = ({
       <div className={styles.titleSection}>
         <div className={styles.titleRow}>
           <h1 className={styles.title}>Kanban Board</h1>
-          <button
-            onClick={handleVoiceButtonClick}
-            className={`${styles.voiceBtn} ${isListening ? styles.listening : ''}`}
-            title="Comando de voz (Ej: 'Cerrar 1')"
-          >
-            {isListening ? '🎙️' : '🎤'}
-          </button>
+          <div className={styles.headerActions}>
+            <button className={styles.backupBtn} title="Backup">Backup</button>
+            <button className={styles.restoreBtn} title="Restore">Restore</button>
+            <button
+              onClick={handleVoiceButtonClick}
+              className={`${styles.voiceBtn} ${isListening ? styles.listening : ''}`}
+              title="Comando de voz (Ej: 'Cerrar 1')"
+            >
+              {isListening ? '🎙️' : '🎤'}
+            </button>
+          </div>
         </div>
         <div className={styles.modeSwitcher}>
           <button
