@@ -44,7 +44,7 @@ function buildFileName(date: Date): string {
   const hours = pad(date.getHours());
   const minutes = pad(date.getMinutes());
   const seconds = pad(date.getSeconds());
-  return `export_${year}-${month}-${day}_${hours}${minutes}${seconds}.csv`;
+  return `kanban_export_${year}-${month}-${day}_${hours}${minutes}${seconds}.json`;
 }
 
 export async function getBackupLog(): Promise<BackupLogEntry[]> {
@@ -73,46 +73,12 @@ function downloadFile(file: File) {
   URL.revokeObjectURL(url);
 }
 
-/**
- * Converts board data to CSV format
- */
-function boardToCSV(board: Board): string {
-  const headers = ['ID', 'Title', 'Description', 'Column', 'Project', 'CreatedAt', 'UpdatedAt'];
-  const rows: string[][] = [headers];
-
-  // Add monthly columns cards
-  board.monthlyColumns.forEach(col => {
-    col.cards.forEach(card => {
-      rows.push([
-        card.id,
-        `"${card.title.replace(/"/g, '""')}"`,
-        `"${card.description?.replace(/"/g, '""') || ''}"`,
-        col.title || '',
-        'Monthly',
-        card.created,
-        card.updated
-      ]);
-    });
-  });
-
-  // Add project columns cards
-  board.projects.forEach(project => {
-    project.columns.forEach(col => {
-      col.cards.forEach(card => {
-        rows.push([
-          card.id,
-          `"${card.title.replace(/"/g, '""')}"`,
-          `"${card.description?.replace(/"/g, '""') || ''}"`,
-          col.title || '',
-          project.name,
-          card.created,
-          card.updated
-        ]);
-      });
-    });
-  });
-
-  return rows.map(row => row.join(',')).join('\n');
+function buildBackupPayload(board: Board, exportedAt: string): BackupFile {
+  return {
+    format: BACKUP_FORMAT,
+    exportedAt,
+    board
+  };
 }
 
 /**
@@ -187,7 +153,7 @@ async function requestStoragePermissions(): Promise<boolean> {
 /**
  * Creates file using cordova-plugin-file and opens Android Sharesheet
  */
-function cordovaExportWithSharesheet(csvData: string, fileName: string): Promise<{ filePath: string; destination: string }> {
+function cordovaExportWithSharesheet(jsonData: string, fileName: string): Promise<{ filePath: string; destination: string }> {
   const cordova = (window as any).cordova;
   const filePlugin = cordova.plugins.file;
   
@@ -220,7 +186,7 @@ function cordovaExportWithSharesheet(csvData: string, fileName: string): Promise
                       // Create ACTION_SEND intent for sharing with file
                       const intent = {
                         action: 'android.intent.action.SEND',
-                        type: 'text/csv',
+                        type: 'application/json',
                         extras: {
                           'android.intent.extra.STREAM': filePath,
                           'android.intent.extra.SUBJECT': 'Backup Kanban Board',
@@ -242,7 +208,7 @@ function cordovaExportWithSharesheet(csvData: string, fileName: string): Promise
                           if (cordova.plugins.fileOpener2) {
                             cordova.plugins.fileOpener2.open(
                               filePath,
-                              'text/csv',
+                              'application/json',
                               {
                                 success: () => {
                                   resolve({ filePath, destination: 'File opened with file-opener2' });
@@ -264,7 +230,7 @@ function cordovaExportWithSharesheet(csvData: string, fileName: string): Promise
                       if (cordova.plugins.fileOpener2) {
                         cordova.plugins.fileOpener2.open(
                           filePath,
-                          'text/csv',
+                          'application/json',
                           {
                             success: () => {
                               resolve({ filePath, destination: 'File opened with file-opener2' });
@@ -285,7 +251,7 @@ function cordovaExportWithSharesheet(csvData: string, fileName: string): Promise
                     if (cordova.plugins.fileOpener2) {
                       cordova.plugins.fileOpener2.open(
                         filePath,
-                        'text/csv',
+                        'application/json',
                         {
                           success: () => {
                             resolve({ filePath, destination: 'File opened with file-opener2' });
@@ -303,7 +269,7 @@ function cordovaExportWithSharesheet(csvData: string, fileName: string): Promise
                 };
                 writer.onerror = reject;
                 
-                const blob = new Blob([csvData], { type: 'text/csv' });
+                const blob = new Blob([jsonData], { type: 'application/json' });
                 writer.write(blob);
               }, reject);
             },
@@ -337,19 +303,20 @@ export async function exportBackup(): Promise<BackupLogEntry> {
   const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   
-  // Generate CSV data
-  const csvData = boardToCSV(board);
+  const exportedAt = now.toISOString();
+  const backupPayload = buildBackupPayload(board, exportedAt);
+  const jsonData = JSON.stringify(backupPayload, null, 2);
   const fileName = buildFileName(now);
   
   let target: BackupLogEntry['target'] = 'download';
   let destination = 'download';
-  let fileContent = csvData;
-  let mimeType = 'text/csv';
+  let fileContent = jsonData;
+  let mimeType = 'application/json';
 
   // Check if running in Cordova environment
   if (typeof window !== 'undefined' && (window as any).cordova) {
     try {
-      const result = await cordovaExportWithSharesheet(csvData, fileName);
+      const result = await cordovaExportWithSharesheet(jsonData, fileName);
       target = 'share';
       destination = result.destination;
       
@@ -361,7 +328,7 @@ export async function exportBackup(): Promise<BackupLogEntry> {
         fileName,
         createdAt: now.toISOString(),
         cardCount: countCards(board),
-        sizeBytes: csvData.length,
+        sizeBytes: jsonData.length,
         target,
         date: dateStr,
         time: timeStr,
