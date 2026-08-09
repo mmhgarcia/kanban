@@ -8,6 +8,7 @@ import { ProjectCardEditor } from '../CardEditor/ProjectCardEditor';
 import { VoiceHelpModal } from '../VoiceHelpModal/VoiceHelpModal';
 import { AlarmModal } from '../AlarmModal/AlarmModal';
 import { ConfirmModal } from '../ConfirmModal/ConfirmModal';
+import { BackupBar } from '../BackupBar/BackupBar';
 import type { Card } from '../../models/Card';
 import { getColumnId } from '../../utils/dates';
 import { startAlertSequence, stopAlertSequence } from '../../utils/audioService';
@@ -521,6 +522,8 @@ export const Board: React.FC = () => {
           </button>
         )}
       </main>
+
+      <BackupBar />
 
       {editorState.isOpen && mode === 'monthly' && (
         <MonthlyCardEditor
