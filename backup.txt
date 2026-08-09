@@ -1,0 +1,31 @@
+Necesito implementar exportación con Android Sharesheet en una app React + TypeScript + Cordova.
+
+Contexto:
+- App híbrida con botones Import/Export
+- La app ya está funcionando con Cordova
+
+Requisitos para el botón Export:
+
+1. Al hacer clic en "Export", debe abrirse el Android Sharesheet nativo (selector que muestra Drive, WhatsApp, almacenamiento local, etc.) para que el usuario elija dónde guardar/compartir el archivo.
+
+2. El archivo es un .csv/texto (puede ser generado en memoria) con nombre dinámico: export_YYYY-MM-DD_HHmmss.csv
+
+3. USAR CORDOVA: Debe usarse el plugin cordova-plugin-file para generar el archivo y cordova-plugin-file-opener2 o window.intent para lanzar el Sharesheet.
+
+4. LOG: Cada vez que se ejecute la exportación, registrar en console.log (y opcionalmente en un archivo de logs dentro de la app) los siguientes campos:
+   - Fecha (YYYY-MM-DD)
+   - Hora (HH:mm:ss)
+   - Nombre del archivo
+   - Destino seleccionado (nombre de la app o ruta)
+
+5. El código debe estar en un único archivo .tsx con:
+   - Función handleExport()
+   - Llamada al plugin de Cordova
+   - Sistema de logging simple
+
+6. Consideraciones:
+   - Solicitar permisos de almacenamiento en Android (READ_EXTERNAL_STORAGE / WRITE_EXTERNAL_STORAGE) usando cordova-plugin-android-permissions
+   - Manejar errores (permisos denegados, fallo al crear archivo)
+
+Entregable: Código TypeScript completo del componente con el botón Export y toda la lógica descrita. Comentarios breves en inglés o español.
+ACLARACIÓN: Como no se puede obtener el destino exacto desde el Sharesheet, registrar la ruta donde se creó el archivo (ej: Downloads) y añadir "Sharesheet launched" como destino. Si se usa opener, registrar la app que lo abrió.

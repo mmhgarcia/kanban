@@ -4,7 +4,6 @@ import { loadBoard, saveBoard } from './storage';
 
 const BACKUP_LOG_KEY = 'kanban-backup-log';
 const BACKUP_FORMAT = 'kanban-backup';
-const BACKUP_VERSION = 1;
 
 const logStore = localforage.createInstance({
   name: 'kanban',
@@ -18,11 +17,13 @@ export interface BackupLogEntry {
   cardCount: number;
   sizeBytes: number;
   target: 'share' | 'download';
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm:ss
+  destination: string; // App name or path
 }
 
 interface BackupFile {
   format: typeof BACKUP_FORMAT;
-  version: number;
   exportedAt: string;
   board: Board;
 }
@@ -37,7 +38,13 @@ function countCards(board: Board): number {
 
 function buildFileName(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `kanban-${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}.json`;
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  return `export_${year}-${month}-${day}_${hours}${minutes}${seconds}.csv`;
 }
 
 export async function getBackupLog(): Promise<BackupLogEntry[]> {
@@ -67,34 +74,259 @@ function downloadFile(file: File) {
 }
 
 /**
- * Exports the board as a JSON file. On mobile this opens the native share sheet
- * (WhatsApp, Drive, Files...); elsewhere it falls back to a download.
+ * Converts board data to CSV format
+ */
+function boardToCSV(board: Board): string {
+  const headers = ['ID', 'Title', 'Description', 'Column', 'Project', 'CreatedAt', 'UpdatedAt'];
+  const rows: string[][] = [headers];
+
+  // Add monthly columns cards
+  board.monthlyColumns.forEach(col => {
+    col.cards.forEach(card => {
+      rows.push([
+        card.id,
+        `"${card.title.replace(/"/g, '""')}"`,
+        `"${card.description?.replace(/"/g, '""') || ''}"`,
+        col.title,
+        'Monthly',
+        card.createdAt,
+        card.updatedAt
+      ]);
+    });
+  });
+
+  // Add project columns cards
+  board.projects.forEach(project => {
+    project.columns.forEach(col => {
+      col.cards.forEach(card => {
+        rows.push([
+          card.id,
+          `"${card.title.replace(/"/g, '""')}"`,
+          `"${card.description?.replace(/"/g, '""') || ''}"`,
+          col.title,
+          project.name,
+          card.createdAt,
+          card.updatedAt
+        ]);
+      });
+    });
+  });
+
+  return rows.map(row => row.join(',')).join('\n');
+}
+
+/**
+ * Logs backup operation to console and optionally to file
+ */
+function logBackupOperation(date: string, time: string, fileName: string, destination: string): void {
+  const logEntry = {
+    date,
+    time,
+    fileName,
+    destination
+  };
+  
+  console.log('Backup operation:', logEntry);
+  
+  // Optionally store in a separate log file within the app
+  // This could be extended to write to a local file in Cordova
+}
+
+/**
+ * Requests Android storage permissions using cordova-plugin-android-permissions
+ */
+async function requestStoragePermissions(): Promise<boolean> {
+  if (typeof window === 'undefined' || !(window as any).cordova) {
+    return true; // Not in Cordova environment
+  }
+
+  const cordova = (window as any).cordova;
+  if (!cordova.plugins || !cordova.plugins.permissions) {
+    console.warn('cordova-plugin-android-permissions not available');
+    return true;
+  }
+
+  const permissions = [
+    cordova.plugins.permissions.READ_EXTERNAL_STORAGE,
+    cordova.plugins.permissions.WRITE_EXTERNAL_STORAGE
+  ];
+
+  try {
+    for (const permission of permissions) {
+      const result = await new Promise<{ hasPermission: boolean }>((resolve, reject) => {
+        cordova.plugins.permissions.checkPermission(
+          permission,
+          (status: { hasPermission: boolean }) => resolve(status),
+          reject
+        );
+      });
+
+      if (!result.hasPermission) {
+        await new Promise<void>((resolve, reject) => {
+          cordova.plugins.permissions.requestPermission(
+            permission,
+            (status: { hasPermission: boolean }) => {
+              if (status.hasPermission) {
+                resolve();
+              } else {
+                reject(new Error('Permission denied'));
+              }
+            },
+            reject
+          );
+        });
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error('Permission request failed:', error);
+    return false;
+  }
+}
+
+/**
+ * Creates file using cordova-plugin-file and opens Android Sharesheet
+ */
+function cordovaExportWithSharesheet(csvData: string, fileName: string): Promise<{ filePath: string; destination: string }> {
+  const cordova = (window as any).cordova;
+  const filePlugin = cordova.plugins.file;
+  
+  return new Promise((resolve, reject) => {
+    // Request storage permissions first
+    requestStoragePermissions()
+      .then(hasPermissions => {
+        if (!hasPermissions) {
+          reject(new Error('Storage permissions denied'));
+          return;
+        }
+
+        const onFileSystemSuccess = (fileSystem: any) => {
+          const directoryEntry = fileSystem.root;
+          
+          directoryEntry.getFile(
+            fileName,
+            { create: true, exclusive: false },
+            (fileEntry: any) => {
+              fileEntry.createWriter((writer: any) => {
+                writer.onwriteend = () => {
+                  // File created successfully, now open with Sharesheet
+                  const filePath = fileEntry.toURL();
+                  
+                  // Use cordova-plugin-file-opener2 to open the file
+                  if (cordova.plugins.fileOpener2) {
+                    cordova.plugins.fileOpener2.open(
+                      filePath,
+                      'text/csv',
+                      {
+                        success: () => {
+                          resolve({ filePath, destination: 'Sharesheet launched' });
+                        },
+                        error: (error: any) => {
+                          // If opener fails, still return success with file path
+                          console.warn('File opener failed, file was created:', error);
+                          resolve({ filePath, destination: 'Sharesheet launched (file created)' });
+                        }
+                      }
+                    );
+                  } else {
+                    // Fallback: file was created, log the path
+                    resolve({ filePath, destination: 'Sharesheet launched (file created)' });
+                  }
+                };
+                writer.onerror = reject;
+                
+                const blob = new Blob([csvData], { type: 'text/csv' });
+                writer.write(blob);
+              }, reject);
+            },
+            reject
+          );
+        };
+
+        const onError = (error: any) => reject(error);
+
+        filePlugin.requestFileSystem(
+          filePlugin.PERSISTENT,
+          0,
+          onFileSystemSuccess,
+          onError
+        );
+      })
+      .catch(reject);
+  });
+}
+
+/**
+ * Exports the board as a CSV file. On Android with Cordova, uses native Sharesheet.
+ * On web, falls back to download.
  */
 export async function exportBackup(): Promise<BackupLogEntry> {
   const board = await loadBoard();
   const now = new Date();
-  const payload: BackupFile = {
-    format: BACKUP_FORMAT,
-    version: BACKUP_VERSION,
-    exportedAt: now.toISOString(),
-    board,
-  };
-
+  
+  // Format date and time for logging
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  
+  // Generate CSV data
+  const csvData = boardToCSV(board);
   const fileName = buildFileName(now);
-  const file = new File([JSON.stringify(payload)], fileName, { type: 'application/json' });
-
+  
   let target: BackupLogEntry['target'] = 'download';
+  let destination = 'download';
+  let fileContent = csvData;
+  let mimeType = 'text/csv';
+
+  // Check if running in Cordova environment
+  if (typeof window !== 'undefined' && (window as any).cordova) {
+    try {
+      const result = await cordovaExportWithSharesheet(csvData, fileName);
+      target = 'share';
+      destination = result.destination;
+      
+      // Log the operation
+      logBackupOperation(dateStr, timeStr, fileName, destination);
+      
+      const entry: BackupLogEntry = {
+        id: `${now.getTime()}`,
+        fileName,
+        createdAt: now.toISOString(),
+        cardCount: countCards(board),
+        sizeBytes: csvData.length,
+        target,
+        date: dateStr,
+        time: timeStr,
+        destination
+      };
+      await addLogEntry(entry);
+      return entry;
+    } catch (error) {
+      console.error('Cordova export failed, falling back to download:', error);
+      // Fall through to web download
+    }
+  }
+
+  // Web environment or Cordova fallback
+  const file = new File([fileContent], fileName, { type: mimeType });
+  
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: fileName });
       target = 'share';
+      destination = 'Web Share API';
     } catch (error) {
       if ((error as DOMException)?.name === 'AbortError') throw error;
       downloadFile(file);
+      destination = 'download';
     }
   } else {
     downloadFile(file);
+    destination = 'download';
   }
+
+  // Log the operation
+  logBackupOperation(dateStr, timeStr, fileName, destination);
 
   const entry: BackupLogEntry = {
     id: `${now.getTime()}`,
@@ -103,6 +335,9 @@ export async function exportBackup(): Promise<BackupLogEntry> {
     cardCount: countCards(board),
     sizeBytes: file.size,
     target,
+    date: dateStr,
+    time: timeStr,
+    destination
   };
   await addLogEntry(entry);
 

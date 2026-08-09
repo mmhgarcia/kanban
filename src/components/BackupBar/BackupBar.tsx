@@ -85,8 +85,8 @@ export const BackupBar: React.FC = () => {
                 <li key={entry.id} className={styles.logItem}>
                   <span className={styles.logName}>{entry.fileName}</span>
                   <span className={styles.logMeta}>
-                    {formatFriendlyDate(entry.createdAt)} · {entry.cardCount} tarjetas · {formatSize(entry.sizeBytes)}
-                    {entry.target === 'share' ? ' · compartido' : ' · descargado'}
+                    {entry.date} {entry.time} · {entry.cardCount} tarjetas · {formatSize(entry.sizeBytes)}
+                    {entry.target === 'share' ? ` · ${entry.destination}` : ' · descargado'}
                   </span>
                 </li>
               ))}
