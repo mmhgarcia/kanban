@@ -1,4 +1,13 @@
 import { loadBoard, addBackupLog, type BackupLog } from './storage';
+import { GOOGLE_DRIVE_CONFIG } from '../config/googleDriveConfig';
+
+// Type declarations for Google APIs
+declare global {
+  interface Window {
+    gapi: any;
+    google: any;
+  }
+}
 
 export async function createBackupData(): Promise<string> {
   const board = await loadBoard();
@@ -102,14 +111,16 @@ async function backupToWhatsApp(data: string, fileName: string): Promise<void> {
 }
 
 async function backupToDrive(data: string, fileName: string): Promise<void> {
-  // Google Drive integration would require OAuth and Drive API
-  // For now, we'll use the web share API or local storage
-  if (typeof window !== 'undefined' && (window as any).cordova) {
-    // Cordova environment - would need Google Drive plugin
-    throw new Error('Integración con Google Drive requiere configuración adicional');
+  // Google Drive API integration with folder picker
+  if (typeof window !== 'undefined') {
+    // Check if Google Drive is configured
+    if (GOOGLE_DRIVE_CONFIG.apiKey === 'YOUR_API_KEY' || 
+        GOOGLE_DRIVE_CONFIG.clientId === 'YOUR_CLIENT_ID') {
+      throw new Error('Google Drive API no configurado. Por favor configura las credenciales en googleDriveConfig.ts');
+    }
+    await googleDriveBackupWithPicker(data, fileName);
   } else {
-    // Web environment - use web share API
-    await webShare(data, fileName);
+    throw new Error('Google Drive API no disponible en este entorno');
   }
 }
 
@@ -251,5 +262,85 @@ async function cordovaGenericShare(data: string, fileName: string): Promise<void
     
     reader.onerror = reject;
     reader.readAsDataURL(blob);
+  });
+}
+
+// Google Drive API integration with folder picker
+async function googleDriveBackupWithPicker(data: string, fileName: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // Load Google API client and Picker API
+    const loadGoogleAPIs = () => {
+      return new Promise<void>((loadResolve, loadReject) => {
+        // Check if APIs are already loaded
+        if ((window as any).gapi && (window as any).google) {
+          loadResolve();
+          return;
+        }
+
+        // Load Google API client
+        const script = document.createElement('script');
+        script.src = 'https://apis.google.com/js/api.js';
+        script.onload = () => {
+          window.gapi.load('client:picker', () => {
+            loadResolve();
+          });
+        };
+        script.onerror = loadReject;
+        document.head.appendChild(script);
+      });
+    };
+
+    loadGoogleAPIs()
+      .then(() => {
+        // Initialize Google API client
+        return window.gapi.client.init({
+          apiKey: GOOGLE_DRIVE_CONFIG.apiKey,
+          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+          clientId: GOOGLE_DRIVE_CONFIG.clientId,
+          scope: GOOGLE_DRIVE_CONFIG.scope
+        });
+      })
+      .then(() => {
+        // Create Google Picker
+        const picker = new (window as any).google.picker.PickerBuilder()
+          .addView((window as any).google.picker.ViewId.FOLDERS)
+          .addView((window as any).google.picker.ViewId.DOCS)
+          .setAppId(GOOGLE_DRIVE_CONFIG.appId)
+          .setOAuthToken((window.gapi.auth.getToken() as any).access_token)
+          .setDeveloperKey(GOOGLE_DRIVE_CONFIG.apiKey)
+          .setCallback((pickerData: any) => {
+            if (pickerData.action === (window as any).google.picker.Action.PICKED) {
+              const folderId = pickerData.docs[0].id;
+              uploadFileToDrive(data, fileName, folderId)
+                .then(() => resolve())
+                .catch(reject);
+            } else if (pickerData.action === (window as any).google.picker.Action.CANCEL) {
+              reject(new Error('Selección de carpeta cancelada'));
+            }
+          })
+          .build();
+
+        picker.setVisible(true);
+      })
+      .catch(reject);
+  });
+}
+
+async function uploadFileToDrive(data: string, fileName: string, folderId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const metadata = {
+      name: fileName,
+      mimeType: 'application/json',
+      parents: [folderId]
+    };
+
+    window.gapi.client.request({
+      path: '/upload/drive/v3/files?uploadType=multipart',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'multipart/related; boundary=boundary'
+      },
+      body: `--boundary\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--boundary\r\nContent-Type: application/json\r\n\r\n${data}\r\n--boundary--`
+    }).then(() => resolve()).catch(reject);
   });
 }
