@@ -88,6 +88,13 @@
   text-align: center;
 }
 
+.destinationDescription {
+  font-size: 11px;
+  font-weight: 400;
+  color: #a0a0a0;
+  text-align: center;
+}
+
 .backupConfig {
   display: flex;
   flex-direction: column;

@@ -15,10 +15,10 @@ export const BackupDestinationSelector: React.FC<BackupDestinationSelectorProps>
   const [isProcessing, setIsProcessing] = useState(false);
 
   const destinations = [
-    { id: 'drive' as const, name: 'Google Drive', icon: '📁' },
-    { id: 'whatsapp' as const, name: 'WhatsApp', icon: '💬' },
-    { id: 'local' as const, name: 'Local/Archivo', icon: '💾' },
-    { id: 'other' as const, name: 'Otro', icon: '📤' }
+    { id: 'drive' as const, name: 'Google Drive', icon: '📁', description: 'Usar selector nativo' },
+    { id: 'whatsapp' as const, name: 'WhatsApp', icon: '💬', description: 'Compartir directamente' },
+    { id: 'local' as const, name: 'Local/Archivo', icon: '💾', description: 'Descargar archivo' },
+    { id: 'other' as const, name: 'Compartir', icon: '📤', description: 'Selector de apps' }
   ];
 
   const handleDestinationSelect = (dest: 'drive' | 'whatsapp' | 'local' | 'other') => {
@@ -62,6 +62,7 @@ export const BackupDestinationSelector: React.FC<BackupDestinationSelectorProps>
               >
                 <span className={styles.destinationIcon}>{dest.icon}</span>
                 <span className={styles.destinationName}>{dest.name}</span>
+                <span className={styles.destinationDescription}>{dest.description}</span>
               </button>
             ))}
           </div>

@@ -1,13 +1,4 @@
 import { loadBoard, addBackupLog, type BackupLog } from './storage';
-import { GOOGLE_DRIVE_CONFIG } from '../config/googleDriveConfig';
-
-// Type declarations for Google APIs
-declare global {
-  interface Window {
-    gapi: any;
-    google: any;
-  }
-}
 
 export async function createBackupData(): Promise<string> {
   const board = await loadBoard();
@@ -27,7 +18,7 @@ export async function performBackup(
     drive: 'Google Drive',
     whatsapp: 'WhatsApp',
     local: 'Local/Archivo',
-    other: 'Otro'
+    other: 'Compartir'
   };
 
   let success = false;
@@ -43,15 +34,10 @@ export async function performBackup(
         success = true;
         break;
       case 'whatsapp':
-        await backupToWhatsApp(backupData, fileName);
-        success = true;
-        break;
       case 'drive':
-        await backupToDrive(backupData, fileName);
-        success = true;
-        break;
       case 'other':
-        await backupToOther(backupData, fileName);
+        // All use native Web Share API
+        await nativeShare(backupData, fileName, destinationNames[destination]);
         success = true;
         break;
     }
@@ -80,7 +66,6 @@ export async function performBackup(
 }
 
 async function backupToLocal(data: string, fileName: string): Promise<void> {
-  // For web/Cordova environment, we'll use the File API or Cordova File plugin
   if (typeof window !== 'undefined' && (window as any).cordova) {
     // Cordova environment
     const cordova = (window as any).cordova;
@@ -95,50 +80,20 @@ async function backupToLocal(data: string, fileName: string): Promise<void> {
   }
 }
 
-async function backupToWhatsApp(data: string, fileName: string): Promise<void> {
-  // For mobile, use WhatsApp sharing
+async function nativeShare(data: string, fileName: string, destinationName: string): Promise<void> {
   if (typeof window !== 'undefined' && (window as any).cordova) {
+    // Cordova environment - use social sharing plugin
     const cordova = (window as any).cordova;
     if (cordova && cordova.plugins && cordova.plugins.socialsharing) {
-      await cordovaWhatsAppShare(data, fileName);
+      await cordovaShare(data, fileName, destinationName);
     } else {
       throw new Error('Plugin de sharing social no disponible');
     }
   } else {
-    // Web environment - use web share API if available
-    await webShare(data, fileName);
+    // Web environment - use Web Share API
+    await webShare(data, fileName, destinationName);
   }
 }
-
-async function backupToDrive(data: string, fileName: string): Promise<void> {
-  // Google Drive API integration with folder picker
-  if (typeof window !== 'undefined') {
-    // Check if Google Drive is configured
-    if (GOOGLE_DRIVE_CONFIG.apiKey === 'YOUR_API_KEY' || 
-        GOOGLE_DRIVE_CONFIG.clientId === 'YOUR_CLIENT_ID') {
-      throw new Error('Google Drive API no configurado. Por favor configura las credenciales en googleDriveConfig.ts');
-    }
-    await googleDriveBackupWithPicker(data, fileName);
-  } else {
-    throw new Error('Google Drive API no disponible en este entorno');
-  }
-}
-
-async function backupToOther(data: string, fileName: string): Promise<void> {
-  // Use generic share functionality
-  if (typeof window !== 'undefined' && (window as any).cordova) {
-    const cordova = (window as any).cordova;
-    if (cordova && cordova.plugins && cordova.plugins.socialsharing) {
-      await cordovaGenericShare(data, fileName);
-    } else {
-      throw new Error('Plugin de sharing social no disponible');
-    }
-  } else {
-    await webShare(data, fileName);
-  }
-}
-
-// Helper functions for different environments
 
 function webDownload(data: string, fileName: string): void {
   const blob = new Blob([data], { type: 'application/json' });
@@ -152,7 +107,7 @@ function webDownload(data: string, fileName: string): void {
   URL.revokeObjectURL(url);
 }
 
-async function webShare(data: string, fileName: string): Promise<void> {
+async function webShare(data: string, fileName: string, destinationName: string): Promise<void> {
   if (navigator.share) {
     const blob = new Blob([data], { type: 'application/json' });
     const file = new File([blob], fileName, { type: 'application/json' });
@@ -161,7 +116,7 @@ async function webShare(data: string, fileName: string): Promise<void> {
       await navigator.share({
         files: [file],
         title: 'Backup Kanban Board',
-        text: `Backup del tablero Kanban: ${fileName}`
+        text: `Backup del tablero Kanban para ${destinationName}: ${fileName}`
       });
     } catch (err) {
       // Fallback to download if share fails or is cancelled
@@ -170,6 +125,7 @@ async function webShare(data: string, fileName: string): Promise<void> {
       }
     }
   } else {
+    // Fallback to download if Web Share API not available
     webDownload(data, fileName);
   }
 }
@@ -200,7 +156,6 @@ async function cordovaBackup(data: string, fileName: string): Promise<void> {
 
     const onError = (error: any) => reject(error);
 
-    // Request persistent storage for Android
     filePlugin.requestFileSystem(
       filePlugin.PERSISTENT,
       0,
@@ -210,7 +165,7 @@ async function cordovaBackup(data: string, fileName: string): Promise<void> {
   });
 }
 
-async function cordovaWhatsAppShare(data: string, fileName: string): Promise<void> {
+async function cordovaShare(data: string, fileName: string, destinationName: string): Promise<void> {
   const cordova = (window as any).cordova;
   const socialSharing = cordova.plugins.socialsharing;
   
@@ -223,34 +178,7 @@ async function cordovaWhatsAppShare(data: string, fileName: string): Promise<voi
       
       socialSharing.shareWithOptions(
         {
-          message: `Backup del tablero Kanban: ${fileName}`,
-          files: [`data:application/json;base64,${base64Data}`],
-          subject: 'Backup Kanban Board'
-        },
-        () => resolve(),
-        (error: any) => reject(error)
-      );
-    };
-    
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-async function cordovaGenericShare(data: string, fileName: string): Promise<void> {
-  const cordova = (window as any).cordova;
-  const socialSharing = cordova.plugins.socialsharing;
-  
-  return new Promise((resolve, reject) => {
-    const blob = new Blob([data], { type: 'application/json' });
-    const reader = new FileReader();
-    
-    reader.onload = () => {
-      const base64Data = (reader.result as string).split(',')[1];
-      
-      socialSharing.shareWithOptions(
-        {
-          message: `Backup del tablero Kanban: ${fileName}`,
+          message: `Backup del tablero Kanban para ${destinationName}: ${fileName}`,
           files: [`data:application/json;base64,${base64Data}`],
           subject: 'Backup Kanban Board',
           chooserTitle: 'Compartir Backup'
@@ -262,85 +190,5 @@ async function cordovaGenericShare(data: string, fileName: string): Promise<void
     
     reader.onerror = reject;
     reader.readAsDataURL(blob);
-  });
-}
-
-// Google Drive API integration with folder picker
-async function googleDriveBackupWithPicker(data: string, fileName: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // Load Google API client and Picker API
-    const loadGoogleAPIs = () => {
-      return new Promise<void>((loadResolve, loadReject) => {
-        // Check if APIs are already loaded
-        if ((window as any).gapi && (window as any).google) {
-          loadResolve();
-          return;
-        }
-
-        // Load Google API client
-        const script = document.createElement('script');
-        script.src = 'https://apis.google.com/js/api.js';
-        script.onload = () => {
-          window.gapi.load('client:picker', () => {
-            loadResolve();
-          });
-        };
-        script.onerror = loadReject;
-        document.head.appendChild(script);
-      });
-    };
-
-    loadGoogleAPIs()
-      .then(() => {
-        // Initialize Google API client
-        return window.gapi.client.init({
-          apiKey: GOOGLE_DRIVE_CONFIG.apiKey,
-          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-          clientId: GOOGLE_DRIVE_CONFIG.clientId,
-          scope: GOOGLE_DRIVE_CONFIG.scope
-        });
-      })
-      .then(() => {
-        // Create Google Picker
-        const picker = new (window as any).google.picker.PickerBuilder()
-          .addView((window as any).google.picker.ViewId.FOLDERS)
-          .addView((window as any).google.picker.ViewId.DOCS)
-          .setAppId(GOOGLE_DRIVE_CONFIG.appId)
-          .setOAuthToken((window.gapi.auth.getToken() as any).access_token)
-          .setDeveloperKey(GOOGLE_DRIVE_CONFIG.apiKey)
-          .setCallback((pickerData: any) => {
-            if (pickerData.action === (window as any).google.picker.Action.PICKED) {
-              const folderId = pickerData.docs[0].id;
-              uploadFileToDrive(data, fileName, folderId)
-                .then(() => resolve())
-                .catch(reject);
-            } else if (pickerData.action === (window as any).google.picker.Action.CANCEL) {
-              reject(new Error('Selección de carpeta cancelada'));
-            }
-          })
-          .build();
-
-        picker.setVisible(true);
-      })
-      .catch(reject);
-  });
-}
-
-async function uploadFileToDrive(data: string, fileName: string, folderId: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const metadata = {
-      name: fileName,
-      mimeType: 'application/json',
-      parents: [folderId]
-    };
-
-    window.gapi.client.request({
-      path: '/upload/drive/v3/files?uploadType=multipart',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'multipart/related; boundary=boundary'
-      },
-      body: `--boundary\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--boundary\r\nContent-Type: application/json\r\n\r\n${data}\r\n--boundary--`
-    }).then(() => resolve()).catch(reject);
   });
 }
