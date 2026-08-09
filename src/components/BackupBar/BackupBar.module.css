@@ -94,7 +94,7 @@
 .status {
   position: fixed;
   left: 50%;
-  bottom: 90px;
+  bottom: calc(160px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   z-index: 9998;
   max-width: 92vw;
