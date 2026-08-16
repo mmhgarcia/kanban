@@ -7,10 +7,11 @@ import { MonthlyCardEditor } from '../CardEditor/MonthlyCardEditor';
 import { ProjectCardEditor } from '../CardEditor/ProjectCardEditor';
 import { VoiceHelpModal } from '../VoiceHelpModal/VoiceHelpModal';
 import { AlarmModal } from '../AlarmModal/AlarmModal';
+import { BackupDestinationSelector } from '../BackupDestinationSelector/BackupDestinationSelector';
 import type { Card } from '../../models/Card';
 import { getColumnId } from '../../utils/dates';
 import { startAlertSequence, stopAlertSequence } from '../../utils/audioService';
-import { exportBackup } from '../../services/backup';
+import { performBackup } from '../../services/backupService';
 
 export const Board: React.FC = () => {
   const {
@@ -90,6 +91,7 @@ export const Board: React.FC = () => {
   }>({ isOpen: false, columnId: null, cardToEdit: null });
 
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isBackupSelectorOpen, setIsBackupSelectorOpen] = useState(false);
 
   const [draggedCard, setDraggedCard] = useState<{ id: string; columnId: string } | null>(null);
 
@@ -434,11 +436,48 @@ export const Board: React.FC = () => {
 
   const handleBackupClick = async () => {
     try {
-      const entry = await exportBackup();
-      alert(`Backup completado: ${entry.fileName}`);
+      // Generar nombre del backup
+      const now = new Date();
+      const backupName = `backup_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      // Verificar si estamos en Capacitor
+      if (typeof window !== 'undefined' && (window as any).Capacitor) {
+        const { FilePicker } = await import('@capawesome/capacitor-file-picker');
+        
+        try {
+          // Mostrar el Capacitor File Picker para seleccionar directorio
+          const dirResult = await FilePicker.pickDirectory();
+          
+          if (dirResult.path) {
+            // Realizar el backup con el directorio seleccionado
+            const result = await performBackup('local', backupName, dirResult.path);
+            alert(`Backup completado: ${result.fileName} guardado en ${result.filePath}`);
+          } else {
+            throw new Error('No se seleccionó ningún directorio');
+          }
+        } catch (error) {
+          console.error('Capacitor directory picker error:', error);
+          if ((error as Error).message.includes('cancelled') || (error as Error).message.includes('User canceled')) {
+            return; // Usuario canceló, no mostrar error
+          }
+          throw error;
+        }
+      } else {
+        // Fallback para web: mostrar el selector de destinos
+        setIsBackupSelectorOpen(true);
+      }
     } catch (error) {
       console.error('Backup error:', error);
-      if ((error as DOMException)?.name === 'AbortError') return;
+      alert('Error al realizar el backup');
+    }
+  };
+
+  const handleBackup = async (destination: 'drive' | 'whatsapp' | 'local' | 'other', backupName: string) => {
+    try {
+      const result = await performBackup(destination, backupName);
+      alert(`Backup completado: ${result.fileName} guardado en ${result.filePath}`);
+    } catch (error) {
+      console.error('Backup error:', error);
       alert('Error al realizar el backup');
     }
   };
@@ -553,6 +592,13 @@ export const Board: React.FC = () => {
           card={activeAlarm.card}
           onSnooze={handleAlarmSnooze}
           onDiscard={handleAlarmDiscard}
+        />
+      )}
+
+      {isBackupSelectorOpen && (
+        <BackupDestinationSelector
+          onClose={() => setIsBackupSelectorOpen(false)}
+          onBackup={handleBackup}
         />
       )}
 

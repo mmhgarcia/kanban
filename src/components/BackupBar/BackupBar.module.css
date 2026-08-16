@@ -71,12 +71,21 @@
 
 .logItem {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   background-color: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   padding: 8px 12px;
+}
+
+.logInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 
 .logName {
@@ -89,6 +98,23 @@
 .logMeta {
   color: #a0a0c0;
   font-size: 12px;
+}
+
+.restoreBtn {
+  background-color: #0f3460;
+  color: #ffffff;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.restoreBtn:hover {
+  background-color: #16457a;
+  border-color: #3a3a5a;
 }
 
 .status {

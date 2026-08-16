@@ -20,6 +20,7 @@ export interface BackupLogEntry {
   date: string; // YYYY-MM-DD
   time: string; // HH:mm:ss
   destination: string; // App name or path
+  board?: Board; // Stored board data for local restore
 }
 
 interface BackupFile {
@@ -327,7 +328,8 @@ export async function exportBackup(): Promise<BackupLogEntry> {
         target,
         date: dateStr,
         time: timeStr,
-        destination
+        destination,
+        board // Store board for local restore
       };
       await addLogEntry(entry);
       return entry;
@@ -367,7 +369,8 @@ export async function exportBackup(): Promise<BackupLogEntry> {
     target,
     date: dateStr,
     time: timeStr,
-    destination
+    destination,
+    board // Store board for local restore
   };
   await addLogEntry(entry);
 
@@ -406,4 +409,15 @@ export async function readBackupFile(file: File): Promise<{ board: Board; cardCo
 
 export async function restoreBackup(board: Board): Promise<void> {
   await saveBoard(board);
+}
+
+export async function restoreBackupFromLog(entryId: string): Promise<void> {
+  const log = await getBackupLog();
+  const entry = log.find(e => e.id === entryId);
+  
+  if (!entry || !entry.board) {
+    throw new Error('Backup no encontrado o sin datos del tablero');
+  }
+  
+  await restoreBackup(entry.board);
 }

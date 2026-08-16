@@ -1,0 +1,11 @@
+{
+  "appName": "kanban",
+  "webBuildCommand": "npm run build:cordova",
+  "capPlatform": "android",
+  "capSyncCommand": "npx cap sync android",
+  "gradleCommand": "./gradlew assembleDebug",
+  "androidDir": "android",
+  "apkOutputPath": "android/app/build/outputs/apk/debug/app-debug.apk",
+  "jdkPath": "/usr/lib/jvm/java-17-openjdk-amd64",
+  "postSyncScript": ""
+}

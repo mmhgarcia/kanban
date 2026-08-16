@@ -1,4 +1,7 @@
-import { loadBoard, addBackupLog, type BackupLog } from './storage';
+import { loadBoard } from './storage';
+import { addLogEntry, type BackupLogEntry } from './backup';
+import { Filesystem } from '@capacitor/filesystem';
+import type { Board } from '../models/Board';
 
 export async function createBackupData(): Promise<string> {
   const board = await loadBoard();
@@ -7,12 +10,13 @@ export async function createBackupData(): Promise<string> {
 
 export async function performBackup(
   destination: 'drive' | 'whatsapp' | 'local' | 'other',
-  backupName: string
-): Promise<void> {
+  backupName: string,
+  customPath?: string
+): Promise<{ fileName: string; filePath: string }> {
   const now = new Date();
-  const timestamp = now.toISOString();
-  const date = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
-  const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
   const destinationNames = {
     drive: 'Google Drive',
@@ -21,23 +25,26 @@ export async function performBackup(
     other: 'Compartir'
   };
 
+  let filePath = '';
   let success = false;
   let error: string | undefined;
+  let board: Board | undefined;
 
   try {
     const backupData = await createBackupData();
+    board = JSON.parse(backupData) as Board;
     const fileName = `${backupName}.json`;
 
     switch (destination) {
       case 'local':
-        await backupToLocal(backupData, fileName);
+        filePath = await backupToLocal(backupData, fileName, customPath);
         success = true;
         break;
       case 'whatsapp':
       case 'drive':
       case 'other':
         // All use native Web Share API
-        await nativeShare(backupData, fileName, destinationNames[destination]);
+        filePath = await nativeShare(backupData, fileName, destinationNames[destination]);
         success = true;
         break;
     }
@@ -46,27 +53,43 @@ export async function performBackup(
     console.error('Backup failed:', err);
   }
 
-  const log: BackupLog = {
-    id: `backup_${Date.now()}`,
-    timestamp,
-    date,
-    time,
-    destination,
-    destinationName: destinationNames[destination],
-    backupName,
-    success,
-    error
+  // Crear entrada de log con la información necesaria para restore
+  const logEntry: BackupLogEntry = {
+    id: `${now.getTime()}`,
+    fileName: `${backupName}.json`,
+    createdAt: now.toISOString(),
+    cardCount: board ? countCards(board) : 0,
+    sizeBytes: 0, // Se calcularía si necesitamos el tamaño exacto
+    target: destination === 'local' ? 'download' : 'share',
+    date: dateStr,
+    time: timeStr,
+    destination: filePath || destinationNames[destination],
+    board // Guardamos el board para permitir restore local
   };
 
-  await addBackupLog(log);
+  await addLogEntry(logEntry);
 
   if (!success) {
     throw new Error(error || 'Backup falló');
   }
+
+  return { fileName: `${backupName}.json`, filePath };
+}
+
+function countCards(board: Board): number {
+  const columns = [
+    ...board.monthlyColumns,
+    ...board.projects.flatMap(p => p.columns),
+  ];
+  return columns.reduce((total, col) => total + col.cards.length, 0);
 }
 
 function isCordovaAvailable(): boolean {
   return typeof window !== 'undefined' && !!(window as any).cordova;
+}
+
+function isCapacitorAvailable(): boolean {
+  return typeof window !== 'undefined' && !!(window as any).Capacitor;
 }
 
 async function requestAndroidStoragePermissions(): Promise<boolean> {
@@ -166,7 +189,40 @@ async function createCordovaFile(directoryPath: string, fileName: string, data: 
   });
 }
 
-async function backupToLocal(data: string, fileName: string): Promise<void> {
+async function backupToLocal(data: string, fileName: string, customPath?: string): Promise<string> {
+  if (isCapacitorAvailable()) {
+    try {
+      // Si se proporcionó un path personalizado del File Picker, usarlo
+      if (customPath) {
+        await Filesystem.writeFile({
+          path: `${customPath}/${fileName}`,
+          data: data,
+          directory: 'EXTERNAL',
+          encoding: 'utf8'
+        });
+        const location = `${customPath}/${fileName}`;
+        alert(`Backup guardado en ${location}`);
+        return location;
+      } else {
+        // Intentar usar Capacitor Filesystem API con directorio por defecto
+        await Filesystem.writeFile({
+          path: fileName,
+          data: data,
+          directory: 'Documents',
+          encoding: 'utf8'
+        });
+        const location = `Documents/${fileName}`;
+        alert(`Backup guardado en ${location}`);
+        return location;
+      }
+    } catch (error) {
+      console.warn('Capacitor Filesystem error, falling back to web download:', error);
+      // Si falla, usar web download como fallback
+      webDownload(data, fileName);
+      return 'Descargado localmente';
+    }
+  }
+
   if (isCordovaAvailable()) {
     const hasPermissions = await requestAndroidStoragePermissions();
     if (!hasPermissions) {
@@ -176,14 +232,63 @@ async function backupToLocal(data: string, fileName: string): Promise<void> {
     const cordova = (window as any).cordova;
     const baseDir = getCordovaSaveDirectory();
     const targetDirectory = cordova.file.externalRootDirectory ? `${baseDir}Download/` : baseDir;
-    await createCordovaFile(targetDirectory, fileName, data);
-    return;
+    const filePath = await createCordovaFile(targetDirectory, fileName, data);
+    return filePath;
   }
 
   webDownload(data, fileName);
+  return 'Descargado localmente';
 }
 
-async function nativeShare(data: string, fileName: string, destinationName: string): Promise<void> {
+async function nativeShare(data: string, fileName: string, destinationName: string): Promise<string> {
+  if (isCapacitorAvailable()) {
+    try {
+      // Guardar el archivo temporalmente usando Capacitor Filesystem
+      await Filesystem.writeFile({
+        path: fileName,
+        data: data,
+        directory: 'Cache',
+        encoding: 'utf8'
+      });
+
+      // Obtener la URI del archivo
+      const fileUri = await Filesystem.getUri({
+        path: fileName,
+        directory: 'Cache'
+      });
+
+      // Usar el File Picker nativo del sistema para compartir
+      if ((navigator as any).share) {
+        const blob = new Blob([data], { type: 'application/json' });
+        const file = new File([blob], fileName, { type: 'application/json' });
+        
+        try {
+          await (navigator as any).share({
+            files: [file],
+            title: 'Backup Kanban Board',
+            text: `Backup del tablero Kanban para ${destinationName}: ${fileName}`
+          });
+          return `Compartido vía ${destinationName}`;
+        } catch (err) {
+          if ((err as Error).name !== 'AbortError') {
+            // Si el share nativo falla, usar fallback
+            console.warn('Navigator.share failed, using fallback:', err);
+          } else {
+            return `Compartido vía ${destinationName} (cancelado por usuario)`;
+          }
+        }
+      }
+
+      // Fallback: descargar el archivo
+      webDownload(data, fileName);
+      return 'Descargado localmente (fallback)';
+    } catch (error) {
+      console.warn('Capacitor sharing error, falling back to web share:', error);
+      const result = await webShare(data, fileName, destinationName);
+      return result;
+    }
+  }
+
   if (isCordovaAvailable()) {
     const hasPermissions = await requestAndroidStoragePermissions();
     if (!hasPermissions) {
@@ -211,7 +316,7 @@ async function nativeShare(data: string, fileName: string, destinationName: stri
           };
 
           const chooser = intentShim.createChooser(intent, 'Compartir backup');
-          intentShim.startActivity(chooser, resolve, reject);
+          intentShim.startActivity(chooser, () => resolve(filePath), reject);
         } catch (error) {
           reject(error);
         }
@@ -219,16 +324,18 @@ async function nativeShare(data: string, fileName: string, destinationName: stri
     }
 
     if (cordova.plugins && cordova.plugins.socialsharing) {
-      return cordovaShareFallback(data, fileName, destinationName);
+      const result = await cordovaShareFallback(data, fileName, destinationName);
+      return result;
     }
 
     throw new Error('Plugin de sharing Cordova no disponible');
   }
 
-  await webShare(data, fileName, destinationName);
+  const result = await webShare(data, fileName, destinationName);
+  return result;
 }
 
-async function cordovaShareFallback(data: string, fileName: string, destinationName: string): Promise<void> {
+async function cordovaShareFallback(data: string, fileName: string, destinationName: string): Promise<string> {
   const cordova = (window as any).cordova;
   if (!cordova.plugins?.socialsharing) {
     throw new Error('Plugin socialsharing no disponible');
@@ -247,7 +354,7 @@ async function cordovaShareFallback(data: string, fileName: string, destinationN
           subject: 'Backup Kanban Board',
           chooserTitle: 'Compartir Backup'
         },
-        () => resolve(),
+        () => resolve(`Compartido vía ${destinationName}`),
         (error: any) => reject(error)
       );
     };
@@ -269,7 +376,7 @@ function webDownload(data: string, fileName: string): void {
   URL.revokeObjectURL(url);
 }
 
-async function webShare(data: string, fileName: string, destinationName: string): Promise<void> {
+async function webShare(data: string, fileName: string, destinationName: string): Promise<string> {
   if (navigator.share) {
     const blob = new Blob([data], { type: 'application/json' });
     const file = new File([blob], fileName, { type: 'application/json' });
@@ -280,12 +387,16 @@ async function webShare(data: string, fileName: string, destinationName: string)
         title: 'Backup Kanban Board',
         text: `Backup del tablero Kanban para ${destinationName}: ${fileName}`
       });
+      return `Compartido vía ${destinationName}`;
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         webDownload(data, fileName);
+        return 'Descargado localmente (fallback del share)';
       }
+      return `Compartido vía ${destinationName} (cancelado por usuario)`;
     }
   } else {
     webDownload(data, fileName);
+    return 'Descargado localmente';
   }
 }

@@ -24,6 +24,8 @@ export interface BackupLog {
   destination: 'drive' | 'whatsapp' | 'local' | 'other';
   destinationName: string; // User-friendly name
   backupName: string; // Name assigned to backup
+  fileName: string; // Complete filename with extension
+  filePath: string; // Full path where the file was saved
   success: boolean;
   error?: string;
 }

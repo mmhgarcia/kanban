@@ -1,0 +1,116 @@
+msi@DESKTOP-OCPR0UU:/mnt/d/proyectos/kanban$ build-apk-generic
+=== Build APK: kanban ===
+Usando: openjdk version "17.0.19" 2026-04-21
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+Config: .apk-build.json
+
+[1/4] Compilando app web (npm run build:cordova)...
+
+> kanban@0.0.0 build:cordova
+> tsc -b && vite build --outDir www
+
+file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:597
+                        const error = /* @__PURE__ */ new Error("Cannot find native binding. npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). Please try `npm i` again after removing both package-lock.json and node_modules directory.");
+                                                      ^
+
+Error: Cannot find native binding. npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). Please try `npm i` again after removing both package-lock.json and node_modules directory.
+    at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:597:34
+    at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:9:49
+    ... 2 lines matching cause stack trace ...
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26) {
+  cause: Error: Cannot find module '@rolldown/binding-wasm32-wasi'
+  Require stack:
+  - /mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs
+      at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:494:18
+      ... 6 lines matching cause stack trace ...
+      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26) {
+    cause: Error: Cannot find module './rolldown-binding.wasi.cjs'
+    Require stack:
+    - /mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs
+        at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:494:18
+        ... 6 lines matching cause stack trace ...
+        at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26) {
+      cause: Error: Cannot find module '@rolldown/binding-linux-x64-gnu'
+      Require stack:
+      - /mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs
+          at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:494:18
+          ... 6 lines matching cause stack trace ...
+          at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26) {
+        cause: Error: Cannot find module '../rolldown-binding.linux-x64-gnu.node'
+        Require stack:
+        - /mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs
+            at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:494:18
+            at Array.reduce (<anonymous>)
+            at createLoadErrorChain (file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:487:17)
+            at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:598:18
+            at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:9:49
+            at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/parse-CWXBoSKb.mjs:3:46
+            at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+            at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26) {
+          cause: null
+        }
+      }
+    }
+  }
+}
+
+Node.js v22.22.1
+Fallo en los binarios de node_modules (diferencia Windows/Linux). Reconstruyendo para Linux...
+rebuilt dependencies successfully
+
+> kanban@0.0.0 build:cordova
+> tsc -b && vite build --outDir www
+
+file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:597
+                        const error = /* @__PURE__ */ new Error("Cannot find native binding. npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). Please try `npm i` again after removing both package-lock.json and node_modules directory.");
+                                                      ^
+
+Error: Cannot find native binding. npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). Please try `npm i` again after removing both package-lock.json and node_modules directory.
+    at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:597:34
+    at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:9:49
+    ... 2 lines matching cause stack trace ...
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26) {
+  cause: Error: Cannot find module '@rolldown/binding-wasm32-wasi'
+  Require stack:
+  - /mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs
+      at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:494:18
+      ... 6 lines matching cause stack trace ...
+      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26) {
+    cause: Error: Cannot find module './rolldown-binding.wasi.cjs'
+    Require stack:
+    - /mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs
+        at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:494:18
+        ... 6 lines matching cause stack trace ...
+        at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26) {
+      cause: Error: Cannot find module '@rolldown/binding-linux-x64-gnu'
+      Require stack:
+      - /mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs
+          at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:494:18
+          ... 6 lines matching cause stack trace ...
+          at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26) {
+        cause: Error: Cannot find module '../rolldown-binding.linux-x64-gnu.node'
+        Require stack:
+        - /mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs
+            at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:494:18
+            at Array.reduce (<anonymous>)
+            at createLoadErrorChain (file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:487:17)
+            at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:598:18
+            at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/binding-CKyeQZen.mjs:9:49
+            at file:///mnt/d/proyectos/kanban/node_modules/rolldown/dist/shared/parse-CWXBoSKb.mjs:3:46
+            at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+            at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26) {
+          cause: null
+        }
+      }
+    }
+  }
+}
+
+Node.js v22.22.1
+Rebuild no funcionó. Limpiando e instalando dependencias...
+rm: cannot remove 'node_modules/@rolldown/binding-win32-x64-msvc/rolldown-binding.win32-x64-msvc.node': Input/output error
+msi@DESKTOP-OCPR0UU:/mnt/d/proyectos/kanban$
+
+
+
+

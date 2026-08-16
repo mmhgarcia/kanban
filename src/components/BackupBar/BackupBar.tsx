@@ -57,6 +57,23 @@ export const BackupBar: React.FC = () => {
     window.location.reload();
   };
 
+  const handleRestoreFromLog = async (entryId: string) => {
+    const entry = log.find(e => e.id === entryId);
+    if (!entry) return;
+
+    if (entry.board) {
+      // Direct restore from log
+      const date = formatFriendlyDate(entry.createdAt);
+      setPendingRestore({
+        board: entry.board,
+        detail: `${entry.fileName} · ${entry.cardCount} tarjetas · ${date}`,
+      });
+    } else {
+      // This backup doesn't have stored board data
+      setStatus('Este respaldo solo se puede restaurar desde el archivo original');
+    }
+  };
+
   return (
     <>
       <div className={styles.bar}>
@@ -83,11 +100,22 @@ export const BackupBar: React.FC = () => {
             <ul className={styles.logList}>
               {log.map(entry => (
                 <li key={entry.id} className={styles.logItem}>
-                  <span className={styles.logName}>{entry.fileName}</span>
-                  <span className={styles.logMeta}>
-                    {entry.date} {entry.time} · {entry.cardCount} tarjetas · {formatSize(entry.sizeBytes)}
-                    {entry.target === 'share' ? ` · ${entry.destination}` : ' · descargado'}
-                  </span>
+                  <div className={styles.logInfo}>
+                    <span className={styles.logName}>{entry.fileName}</span>
+                    <span className={styles.logMeta}>
+                      {entry.date} {entry.time} · {entry.cardCount} tarjetas · {formatSize(entry.sizeBytes)}
+                      {entry.target === 'share' ? ` · ${entry.destination}` : ' · descargado'}
+                    </span>
+                  </div>
+                  {entry.board && (
+                    <button 
+                      onClick={() => handleRestoreFromLog(entry.id)}
+                      className={styles.restoreBtn}
+                      title="Restaurar este respaldo"
+                    >
+                      🔄
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

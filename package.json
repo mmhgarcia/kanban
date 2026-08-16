@@ -6,11 +6,22 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:cordova": "tsc -b && vite build --outDir www",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios",
+    "cap:build:android": "npm run build && npx cap sync && npx cap open android",
+    "cap:build:ios": "npm run build && npx cap sync && npx cap open ios"
   },
   "dependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.62.4",
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/ios": "^8.5.0",
+    "@capawesome/capacitor-file-picker": "^8.0.4",
     "localforage": "^1.10.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
